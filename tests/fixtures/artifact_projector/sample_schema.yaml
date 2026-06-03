@@ -1,0 +1,50 @@
+program: sample_program
+current_phase: P1
+schema_version: "1.0"
+phases:
+  - id: P1
+    description: "Sample test phase"
+    artifacts:
+      - id: P1.foundation
+        path: "programs/{program}/foundation.md"
+        description: "First artifact, no prereqs"
+        handler:
+          type: apparatus_build
+          priority: normal
+          payload_template:
+            scope: "Build the foundation for {program}"
+            next_action: "implement foundation.md"
+      - id: P1.middle
+        path: "programs/{program}/middle.md"
+        description: "Depends on foundation"
+        prereqs:
+          - P1.foundation
+        handler:
+          type: apparatus_build
+          priority: normal
+          payload_template:
+            scope: "Middle layer for {program}"
+            next_action: "implement middle.md"
+      - id: P1.capstone
+        path: "programs/{program}/capstone.md"
+        description: "Depends on both foundation and middle"
+        prereqs:
+          - P1.foundation
+          - P1.middle
+        handler:
+          type: phase_advance
+          priority: normal
+          payload_template:
+            from_phase: P1_middle_done
+            to_phase: P1_capstone
+            next_action: "ship capstone deliverable for {program}"
+  - id: P2
+    description: "Inactive phase — not current_phase"
+    artifacts:
+      - id: P2.inactive_artifact
+        path: "programs/{program}/p2_artifact.md"
+        handler:
+          type: apparatus_build
+          priority: normal
+          payload_template:
+            scope: "P2 work"

@@ -1,0 +1,226 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+
+% Required for pdflatex compilation: explicit UTF-8 input encoding so
+% literal unicode characters in markdown source (math symbols, smart
+% quotes, em-dashes that haven't been mapped) survive to pdflatex.
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}
+\usepackage{tabularx}
+\usepackage{newunicodechar}
+% Map unicode glyphs the lab uses in markdown to LaTeX equivalents
+\newunicodechar{✓}{\checkmark}
+\newunicodechar{✗}{\ensuremath{\times}}
+\newunicodechar{≈}{\ensuremath{\approx}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{≥}{\ensuremath{\geq}}
+\newunicodechar{→}{\ensuremath{\rightarrow}}
+\newunicodechar{←}{\ensuremath{\leftarrow}}
+\newunicodechar{⇒}{\ensuremath{\Rightarrow}}
+\newunicodechar{∈}{\ensuremath{\in}}
+\newunicodechar{∉}{\ensuremath{\notin}}
+\newunicodechar{∀}{\ensuremath{\forall}}
+\newunicodechar{∃}{\ensuremath{\exists}}
+\newunicodechar{∧}{\ensuremath{\wedge}}
+\newunicodechar{∨}{\ensuremath{\vee}}
+\newunicodechar{¬}{\ensuremath{\neg}}
+\newunicodechar{α}{\ensuremath{\alpha}}
+\newunicodechar{β}{\ensuremath{\beta}}
+\newunicodechar{γ}{\ensuremath{\gamma}}
+\newunicodechar{δ}{\ensuremath{\delta}}
+\newunicodechar{ε}{\ensuremath{\epsilon}}
+\newunicodechar{η}{\ensuremath{\eta}}
+\newunicodechar{θ}{\ensuremath{\theta}}
+\newunicodechar{λ}{\ensuremath{\lambda}}
+\newunicodechar{μ}{\ensuremath{\mu}}
+\newunicodechar{π}{\ensuremath{\pi}}
+\newunicodechar{σ}{\ensuremath{\sigma}}
+\newunicodechar{τ}{\ensuremath{\tau}}
+\newunicodechar{φ}{\ensuremath{\phi}}
+\newunicodechar{ω}{\ensuremath{\omega}}
+\newunicodechar{Δ}{\ensuremath{\Delta}}
+\newunicodechar{Σ}{\ensuremath{\Sigma}}
+\newunicodechar{Ω}{\ensuremath{\Omega}}
+\newunicodechar{§}{\S}
+\newunicodechar{—}{---}
+\newunicodechar{–}{--}
+\newunicodechar{“}{``}
+\newunicodechar{”}{''}
+\newunicodechar{‘}{`}
+\newunicodechar{’}{'}
+\newunicodechar{…}{\ldots}
+\newunicodechar{−}{\ensuremath{-}}
+\newunicodechar{±}{\ensuremath{\pm}}
+\newunicodechar{×}{\ensuremath{\times}}
+\newunicodechar{·}{\ensuremath{\cdot}}
+\newunicodechar{°}{\ensuremath{^{\circ}}}
+\newunicodechar{•}{\textbullet}
+\newunicodechar{‰}{\ensuremath{\permil}}
+\newunicodechar{†}{\ensuremath{\dagger}}
+\newunicodechar{‡}{\ensuremath{\ddagger}}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true,linkcolor=black,citecolor=black,urlcolor=blue}
+
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% fvextra is a strict superset of fancyvrb that supports breaklines/breakanywhere
+% for the Verbatim environment. Required so long lines inside ``` code blocks
+% (regex patterns, file paths) wrap instead of overrunning the column.
+\usepackage{fvextra}
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\NormalTok}[1]{{#1}}
+\newcommand{\KeywordTok}[1]{\textcolor{blue}{\textbf{#1}}}
+\newcommand{\CommentTok}[1]{\textcolor{gray}{\textit{#1}}}
+\newcommand{\StringTok}[1]{\textcolor{red!70!black}{#1}}
+\newcommand{\DataTypeTok}[1]{\textcolor{teal}{#1}}
+\newcommand{\OtherTok}[1]{#1}
+\newcommand{\FunctionTok}[1]{#1}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\ConstantTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{#1}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\ControlFlowTok}[1]{\textbf{#1}}
+\newcommand{\DecValTok}[1]{#1}
+\newcommand{\BaseNTok}[1]{#1}
+\newcommand{\FloatTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor{red!70!black}{#1}}
+\newcommand{\SpecialCharTok}[1]{#1}
+\newcommand{\VerbatimStringTok}[1]{\textcolor{red!70!black}{#1}}
+\newcommand{\SpecialStringTok}[1]{#1}
+\newcommand{\ImportantTok}[1]{\textbf{#1}}
+\newcommand{\DocumentationTok}[1]{\textit{#1}}
+\newcommand{\AnnotationTok}[1]{\textit{#1}}
+\newcommand{\CommentVarTok}[1]{\textit{#1}}
+\newcommand{\InformationTok}[1]{\textit{#1}}
+\newcommand{\WarningTok}[1]{\textcolor{orange}{\textbf{#1}}}
+\newcommand{\AlertTok}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor{red}{\textbf{#1}}}
+\newcommand{\PreprocessorTok}[1]{#1}
+\newcommand{\AttributeTok}[1]{#1}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\VariableTok}[1]{#1}
+
+\providecommand{\passthrough}[1]{#1}
+
+% ----------------------------------------------------------------------
+% Column-overlap mitigations (added 2026-04-27 after appendix overflow
+% in paper_draft_ieee_v2.pdf). IEEE 2-column at 10pt has a ~3.4-inch
+% column width; without these, long unbreakable tokens (file paths,
+% git SHAs, regex patterns, URLs) overrun into the next column.
+% ----------------------------------------------------------------------
+
+% Allow LaTeX more flexibility in inter-word spacing so paragraphs
+% always break SOMEWHERE rather than overrunning. Combined with
+% \emergencystretch this prevents the "extra column-bleed" cases.
+\sloppy
+\setlength{\emergencystretch}{3em}
+
+% Allow hyphenation inside \texttt{...} so file paths, identifiers,
+% and code-style spans break at slash/underscore/dot/dash. fontspec
+% would do this automatically but newunicodechar interactions make
+% an explicit setup safer.
+\usepackage[htt]{hyphenat}
+
+% URLs: let url package break at any character if needed, not just
+% at conventional break points (slashes, dots).
+\usepackage{xurl}
+
+% Verbatim code blocks: with fvextra loaded, we can globally set breaklines
+% on the Verbatim environment. The build_ieee_pdf.py post-processor rewrites
+% pandoc's plain `verbatim' env to fvextra's `Verbatim' so these settings
+% apply to every fenced code block in the markdown source.
+\fvset{breaklines=true,breakanywhere=true,fontsize=\small,
+       breaksymbolleft={\tiny\ensuremath{\hookrightarrow}}}
+
+% Reduce penalty for ending a column with an underfull box, which is
+% kinder to layout than letting boxes overrun.
+\hbadness=10000
+\vbadness=10000
+
+% ----------------------------------------------------------------------
+% Section heading style override.
+%
+% IEEEtran's conference mode renders \section in centered small caps
+% (\scshape), \subsection in italics (\itshape), and \subsubsection in
+% italics. We render in BOLD instead so headings have stronger visual
+% weight (the build pipeline post-processes \section -> \section* to
+% suppress IEEE's auto Roman/letter prefix because the markdown source
+% carries explicit numbers like '5. Structural Remediation' that the
+% body's 44+ section cross-references target by number).
+%
+% Definitions are copied from IEEEtran.cls (conference branch, ~line
+% 5467) with the trailing format command swapped (\scshape/\itshape
+% -> \bfseries / \bfseries\itshape).
+% ----------------------------------------------------------------------
+\makeatletter
+\def\section{\@startsection{section}{1}{\z@}%
+  {1.5ex plus 1.5ex minus 0.5ex}%
+  {0.7ex plus 1ex minus 0ex}%
+  {\normalfont\normalsize\centering\bfseries}}
+\def\subsection{\@startsection{subsection}{2}{\z@}%
+  {1.5ex plus 1.5ex minus 0.5ex}%
+  {0.7ex plus .5ex minus 0ex}%
+  {\normalfont\normalsize\bfseries}}
+\def\subsubsection{\@startsection{subsubsection}{3}{\parindent}%
+  {0ex plus 0.1ex minus 0.1ex}%
+  {0ex}%
+  {\normalfont\normalsize\bfseries\itshape}}
+\makeatother
+
+\begin{document}
+
+\title{$title$}
+
+$if(author)$
+\author{
+$author$
+}
+$else$
+% Default authorship: sole human author (operator). The autonomous AGI lab
+% that produced this paper is treated as a *research artifact / instrument*,
+% not a co-author — cited in §Acknowledgments and described as methodology
+% in the body. This supersedes the Alt-D paper Appendix E.2 collective-
+% authorship convention (single-operator lab → instrument framing fits
+% better than ATLAS/LIGO collaborative-authorship framing).
+\author{
+\IEEEauthorblockN{Harshith Kantamneni}
+\IEEEauthorblockA{
+Independent Researcher \\
+\texttt{<contact email redacted>}
+}
+}
+$endif$
+
+\maketitle
+
+$if(abstract)$
+\begin{abstract}
+$abstract$
+\end{abstract}
+$endif$
+
+$if(keywords)$
+\begin{IEEEkeywords}
+$keywords$
+\end{IEEEkeywords}
+$endif$
+
+$body$
+
+\end{document}

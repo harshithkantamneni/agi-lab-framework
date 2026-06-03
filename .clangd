@@ -1,0 +1,30 @@
+# clangd editor-hint config — does NOT affect `make` builds.
+# Provides include paths so the LSP can resolve headers like
+# src/core/tokenizer.h and src/model/hspa_config.h without
+# requiring compile_commands.json. Real builds use Makefile CFLAGS.
+# Fix for D-092 / user_notes.md dev-env nit.
+CompileFlags:
+  Add:
+    - -Isrc/core
+    - -Isrc/model
+    - -Isrc/training
+    - -Isrc/eval
+    - -Isrc/metal
+    - -Isrc/swift
+    - -Isrc/tests
+    - -std=c17
+    - -Wall
+    - -Wextra
+
+---
+# Cycle 30 — suppress diagnostics for quarantined tests.
+# tests/quarantine/test_metal_matmul.c intentionally depends on the
+# deferred Metal bridge (D-088 PERF_APPROVED — GPU dispatch disabled,
+# CPU/AMX 3-100x faster at current scale). clangd cannot resolve
+# metal_bridge.h / metal_init / metal_matmul / Unity macros in that
+# file, producing ~10 spurious diagnostics. These are expected; hide
+# them so they don't clutter every agent's editor.
+If:
+  PathMatch: tests/quarantine/.*
+Diagnostics:
+  Suppress: "*"

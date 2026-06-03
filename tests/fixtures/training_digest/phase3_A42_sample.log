@@ -1,0 +1,503 @@
+
+=== run_long launch 2026-04-27 21:36:48 run_id=phase3_A42 ===
+cmd: build/scale_experiment --model dense50m --tokenizer data/training/tokenizer_32k.bin --backprop --stream --weight-seed 42 --lr 0.001 --seq-len 512 --steps 5000 --checkpoint-every 500 --checkpoint-dir data/checkpoints/phase3_factorial/A42
+=== HSPA Scale-Up Experiment: Real Text Training ===
+
+  weight_seed=42 (explicit --weight-seed)
+[1/5] Loading training data...
+  Mode: STREAM (5-source mixture, D-091)
+  Tokenizer: data/training/tokenizer_32k.bin
+  Sources:
+    [0] WT103  data/training/active/wikitext103_train.txt    516.0 MB  w=0.05
+    [1] OWT    data/training/raw/openwebtext.txt             3081.3 MB  w=0.45
+    [2] Python data/training/raw/python_code.txt             2052.8 MB  w=0.30
+    [3] GSM8K  data/training/raw/gsm8k_train.txt             3.9 MB  w=0.08
+    [4] MATH   data/training/raw/math_train.txt              5.9 MB  w=0.12
+  Tokenizer vocab: 32768
+
+[2/5] Creating model (size=dense50m)...
+  [stream] vocab_size set to 32768 (tokenizer)
+  Config: L=8 D=512 H=8 K=1 k=1 dff=768 V=32768 S=512
+  Parameters: 34619904 (~34.62M)
+  Memory est: model=132.1MB adam=264.1MB grad=132.1MB state=27.0MB data=0.0MB total=555.3MB
+  Model created.
+
+[3/5] Initializing weights (Depth-muP)...
+  Weights initialized.
+  Metal GPU acceleration: ENABLED
+
+[4/5] Creating training infrastructure...
+  Optimizer: AdamW (beta1=0.90, beta2=0.999, wd=0.010)
+  LR: 0.0010 (warmup=200, cosine decay to 1.0e-05 over 5000 steps)
+  Grad accum: 4 micro-batches (effective batch=4)
+  muP wd scaling: D=512 / D_base=128 = 4.00x
+  Training: BACKPROP (forward + backward, no iPC iterations)
+  Default MoE (Dense Backprop): ENABLED (alpha=0.0100, sigma_init=0.0100)
+  Default MoE EMA: 16384 bytes (0.016 MB)
+  StreamDataLoader: 5 sources, seed=0x539
+  All training state created.
+
+  Data: streaming (5 sources, infinite wraparound)
+  Random baseline: ln(32768) = 10.3972 (PPL = 32768)
+
+
+[5/5] Training...
+
+step   | loss      (pred   + bal    + lm    ) | ppl       | gnorm  | ent     | vn_d   | ep | ms
+-------+---------------------------------------+----------+--------+---------+--------+----+------
+    0  |  10.9613 ( 0.000 + 0.0000 + 10.961) |  57601.60 | 11.710 | 0.00000 | 0.0000 |  0 | 9095
+[load] step=0 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=0 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+    1  |  11.0205 ( 0.000 + 0.0000 + 11.020) |  61112.90 | 11.141 | 0.00000 | 0.0000 |  0 | 9271
+[load] step=1 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=1 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+    2  |  10.7910 ( 0.000 + 0.0000 + 10.791) |  48580.50 | 10.249 | 0.00000 | 0.0000 |  0 | 8712
+[load] step=2 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=2 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+    3  |  11.0789 ( 0.000 + 0.0000 + 11.079) |  64789.84 | 11.747 | 0.00000 | 0.0000 |  0 | 9033
+[load] step=3 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=3 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+    4  |  10.7995 ( 0.000 + 0.0000 + 10.800) |  48997.68 | 10.316 | 0.00000 | 0.0000 |  0 | 8632
+[load] step=4 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+   20  |  10.7210 ( 0.000 + 0.0000 + 10.721) |  45298.33 | 13.492 | 0.00000 | 0.0000 |  0 | 8765
+[load] step=20 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=20 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+   40  |  10.3392 ( 0.000 + 0.0000 + 10.339) |  30921.28 | 14.109 | 0.00000 | 0.0000 |  0 | 8613
+[load] step=40 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=40 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+   60  |   9.5708 ( 0.000 + 0.0000 +  9.571) |  14340.14 | 15.484 | 0.00000 | 0.0000 |  0 | 9152
+[load] step=60 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=60 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+   80  |   9.1550 ( 0.000 + 0.0000 +  9.155) |   9461.66 | 13.980 | 0.00000 | 0.0000 |  0 | 9826
+[load] step=80 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=80 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  100  |   8.6799 ( 0.000 + 0.0000 +  8.680) |   5883.34 |  9.048 | 0.00000 | 0.0000 |  0 | 10139
+[load] step=100 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=100 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  120  |   5.5698 ( 0.000 + 0.0000 +  5.570) |    262.39 |  6.230 | 0.00000 | 0.0000 |  0 | 8849
+[load] step=120 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=120 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  140  |   8.0634 ( 0.000 + 0.0000 +  8.063) |   3176.12 |  9.730 | 0.00000 | 0.0000 |  0 | 8798
+[load] step=140 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=140 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  160  |   5.3881 ( 0.000 + 0.0000 +  5.388) |    218.79 |  6.681 | 0.00000 | 0.0000 |  0 | 9042
+[load] step=160 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=160 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  180  |   8.2535 ( 0.000 + 0.0000 +  8.254) |   3841.12 | 15.642 | 0.00000 | 0.0000 |  0 | 8837
+[load] step=180 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=180 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  200  |   7.4913 ( 0.000 + 0.0000 +  7.491) |   1792.31 |  5.134 | 0.00000 | 0.0000 |  0 | 8977
+[load] step=200 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=200 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  220  |   6.9571 ( 0.000 + 0.0000 +  6.957) |   1050.56 |  8.097 | 0.00000 | 0.0000 |  0 | 8739
+[load] step=220 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=220 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  240  |   7.7656 ( 0.000 + 0.0000 +  7.766) |   2358.18 |  7.666 | 0.00000 | 0.0000 |  0 | 8828
+[load] step=240 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=240 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  260  |   7.7742 ( 0.000 + 0.0000 +  7.774) |   2378.42 |  5.668 | 0.00000 | 0.0000 |  0 | 8813
+[load] step=260 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=260 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  280  |   6.1977 ( 0.000 + 0.0000 +  6.198) |    491.60 |  7.300 | 0.00000 | 0.0000 |  0 | 8789
+[load] step=280 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=280 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  300  |   7.5336 ( 0.000 + 0.0000 +  7.534) |   1869.88 |  8.349 | 0.00000 | 0.0000 |  0 | 9128
+[load] step=300 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=300 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  320  |   7.6063 ( 0.000 + 0.0000 +  7.606) |   2010.84 |  3.961 | 0.00000 | 0.0000 |  0 | 8736
+[load] step=320 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=320 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  340  |   7.4394 ( 0.000 + 0.0000 +  7.439) |   1701.74 |  5.378 | 0.00000 | 0.0000 |  0 | 8577
+[load] step=340 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=340 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  360  |   8.2490 ( 0.000 + 0.0000 +  8.249) |   3823.82 |  5.852 | 0.00000 | 0.0000 |  0 | 8602
+[load] step=360 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=360 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  380  |   8.2128 ( 0.000 + 0.0000 +  8.213) |   3687.99 |  5.778 | 0.00000 | 0.0000 |  0 | 8964
+[load] step=380 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=380 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  400  |   8.0038 ( 0.000 + 0.0000 +  8.004) |   2992.33 |  5.755 | 0.00000 | 0.0000 |  0 | 8555
+[load] step=400 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=400 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  420  |   5.8231 ( 0.000 + 0.0000 +  5.823) |    338.02 |  7.644 | 0.00000 | 0.0000 |  0 | 8578
+[load] step=420 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=420 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  440  |   8.0263 ( 0.000 + 0.0000 +  8.026) |   3060.29 |  6.531 | 0.00000 | 0.0000 |  0 | 8582
+[load] step=440 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=440 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  460  |   7.6831 ( 0.000 + 0.0000 +  7.683) |   2171.42 |  6.867 | 0.00000 | 0.0000 |  0 | 8605
+[load] step=460 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=460 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  480  |   7.1553 ( 0.000 + 0.0000 +  7.155) |   1280.90 |  7.474 | 0.00000 | 0.0000 |  0 | 8596
+[load] step=480 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=480 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  500  |   6.6739 ( 0.000 + 0.0000 +  6.674) |    791.51 |  5.709 | 0.00000 | 0.0000 |  0 | 8589
+[load] step=500 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=500 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  >>> Step 500 summary: avg_lm=7.2595, best_ppl=198.35, epochs=0, tokens=1026K, NaN=0 <<<
+  [CKPT] Saved data/checkpoints/phase3_factorial/A42/step_000500.ckpt
+  520  |   5.3169 ( 0.000 + 0.0000 +  5.317) |    203.75 |  7.658 | 0.00000 | 0.0000 |  0 | 8631
+[load] step=520 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=520 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  540  |   7.4141 ( 0.000 + 0.0000 +  7.414) |   1659.23 |  6.480 | 0.00000 | 0.0000 |  0 | 8581
+[load] step=540 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=540 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  560  |   7.6174 ( 0.000 + 0.0000 +  7.617) |   2033.31 |  5.315 | 0.00000 | 0.0000 |  0 | 8564
+[load] step=560 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=560 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  580  |   7.3857 ( 0.000 + 0.0000 +  7.386) |   1612.83 |  5.953 | 0.00000 | 0.0000 |  0 | 9073
+[load] step=580 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=580 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  600  |   7.8552 ( 0.000 + 0.0000 +  7.855) |   2578.99 |  6.572 | 0.00000 | 0.0000 |  0 | 8790
+[load] step=600 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=600 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  620  |   7.3232 ( 0.000 + 0.0000 +  7.323) |   1515.07 |  5.646 | 0.00000 | 0.0000 |  0 | 8822
+
+[middle truncated for fixture brevity — real test reads full log]
+
+[load] step=4860 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4860 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+ 4880  |   4.3420 ( 0.000 + 0.0000 +  4.342) |     76.86 |  6.922 | 0.00000 | 0.0000 |  0 | 8594
+[load] step=4880 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4880 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+ 4900  |   5.9985 ( 0.000 + 0.0000 +  5.999) |    402.82 |  6.346 | 0.00000 | 0.0000 |  0 | 8868
+[load] step=4900 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4900 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+ 4920  |   6.4032 ( 0.000 + 0.0000 +  6.403) |    603.79 |  7.499 | 0.00000 | 0.0000 |  0 | 8573
+[load] step=4920 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4920 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+ 4940  |   5.0689 ( 0.000 + 0.0000 +  5.069) |    158.99 |  6.184 | 0.00000 | 0.0000 |  0 | 8572
+[load] step=4940 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4940 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+ 4960  |   4.6173 ( 0.000 + 0.0000 +  4.617) |    101.22 |  5.058 | 0.00000 | 0.0000 |  0 | 8581
+[load] step=4960 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4960 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+ 4980  |   6.5664 ( 0.000 + 0.0000 +  6.566) |    710.78 |  6.444 | 0.00000 | 0.0000 |  0 | 8651
+[load] step=4980 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4980 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+ 4999  |   4.8764 ( 0.000 + 0.0000 +  4.876) |    131.16 |  6.513 | 0.00000 | 0.0000 |  0 | 8572
+[load] step=4999 layer=0 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 layer=1 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 layer=2 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 layer=3 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 layer=4 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 layer=5 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 layer=6 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 layer=7 K=1 ema=[1.00000] min=1.00000 max=1.00000 ratio=1.00
+[load] step=4999 SUMMARY worst_ratio=1.00 worst_layer=0 gate_hit=0 kill_hit=0
+  [CKPT] Final saved: data/checkpoints/phase3_factorial/A42/final.ckpt
+
+--- Training Complete ---
+
+Summary:
+  Model:          dense50m (~34.62M params)
+  Steps trained:  5000 / 5000
+  Epochs:         0
+  Tokens trained: 10240K
+  Initial PPL:    57601.60
+  Best PPL:       2.12
+  Best loss:      0.7528
+  Recent avg LM:  6.1159
+  Random baseline:10.3972 (PPL=32768)
+  NaN events:     0 (total)
+  Stream diagnostics:
+    [WT103] bytes=2359171  epochs=0
+    [OWT] bytes=20184043  epochs=0
+    [Python] bytes=11402085  epochs=0
+    [GSM8K] bytes=3014537  epochs=0
+    [MATH] bytes=3473062  epochs=0
+    [TOT] bytes=40432898 (38.56 MB)
+
+Verdict: CONVERGING -- LM loss well below random baseline (58.8% of random)
+
+=== Scale-Up Experiment Complete ===
+
+*** ATEXIT: clean process exit ***

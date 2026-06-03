@@ -1,0 +1,5 @@
+{
+  "_comment": "Pinned Hugging Face model revisions (commit SHAs) for reproducibility. Pinning means a fresh machine downloads the EXACT same weights, so retrieval/eval results are comparable across runs and machines. Update these deliberately (and re-validate) when intentionally upgrading a model. Consumed by tools/retrieval/model_pins.py.",
+  "BAAI/bge-reranker-v2-m3": "953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e",
+  "sentence-transformers/all-MiniLM-L6-v2": "c9745ed1d9f207416be6d2e6f8de32d1f16199bf"
+}

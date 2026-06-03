@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "description": "Per-role agent contracts: formal resource bounds + machine-verifiable success criteria. Inspired by arXiv:2601.08815 (Agent Contracts). v1 enforces Director only; other roles stubbed for v2.",
+  "contracts": {
+    "director": {
+      "description": "Director session contract per RO-CO + lab self-direction v2 (B\u2032 + D\u2032). v1 enforces success_criteria checks; resource bounds (max_tokens, max_cycles) are observability metadata only \u2014 enforcement deferred to v2 when telemetry integration matures.",
+      "max_tokens_per_session": 500000,
+      "_max_tokens_per_session_note": "OBSERVABILITY ONLY in v1 \u2014 not checked by _check_contract. Will be enforced in v2.",
+      "max_cycles_between_invocations_seconds": 14400,
+      "_max_cycles_note": "OBSERVABILITY ONLY in v1 \u2014 not checked. Will be enforced in v2.",
+      "success_criteria": [
+        {
+          "id": "session_exit_present",
+          "check": "file_exists",
+          "path": "data/session_exit.md",
+          "description": "Director must write session_exit.md before exit (or the runner detects silent death)"
+        },
+        {
+          "id": "session_exit_schema_valid",
+          "check": "session_exit_schema_v1.1",
+          "description": "session_exit.md JSON block must validate against schema v1.1 (status enum, JSON parses, required fields present)"
+        },
+        {
+          "id": "next_action_or_program_complete",
+          "check": "next_action_populated_or_program_complete_true",
+          "description": "For status=success/partial, EITHER next_action must be populated OR program_complete=true must be set (the v1.1 schema rule)"
+        }
+      ],
+      "violation_handler": "immediate_redispatch_with_correction_prompt",
+      "max_redispatches_per_session": 3,
+      "escalation_on_max_redispatches": "schedule_operator_review"
+    },
+    "pi": {
+      "description": "STUB for v2 \u2014 PI contract not yet enforced. PI sessions currently rely on procedural discipline and verifier_pairs.json.",
+      "v2_planned_criteria": [
+        "verdict_or_calibration_logged",
+        "no_op_rationale_documented_if_exiting_without_action"
+      ]
+    }
+  }
+}

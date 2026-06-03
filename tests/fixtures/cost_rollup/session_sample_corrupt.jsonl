@@ -1,0 +1,4 @@
+{"type":"assistant","timestamp":"2026-05-13T16:30:00.000Z","sessionId":"test-corrupt","message":{"model":"claude-opus-4-7","usage":{"input_tokens":100,"output_tokens":50,"cache_read_input_tokens":1000,"cache_creation_input_tokens":0}}}
+THIS IS NOT JSON
+{"type":"user","timestamp":"2026-05-13T16:31:00.000Z","sessionId":"test-corrupt"}
+{"type":"assistant","timestamp":"2026-05-13T16:32:00.000Z","sessionId":"test-corrupt","message":{"model":"claude-opus-4-7","usage":{"input_tokens":50,"output_tokens":25}}}

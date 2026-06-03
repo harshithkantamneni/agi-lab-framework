@@ -1,0 +1,49 @@
+{
+  "pi": {
+    "verifier_role": "lab_architect",
+    "verifier_model": "claude-sonnet-4-6",
+    "trigger": "any PI proposal or program-selection verdict; any unanimous-required decision",
+    "max_iterations": 2,
+    "note": "lab_architect is sonnet-tier; cross-tier verification catches over-confident PI claims",
+    "calibration_check": "PI's verdict MUST include CONFIDENCE (number in [0,1]) and CALIBRATION_REASONING. Verifier returns VERIFY_FAIL if either is missing, if confidence isn't numerical, or if confidence is obviously miscalibrated relative to the cited evidence (e.g., claiming 95% on something the evidence section flags as uncertain). PI must call tools.calibration_logger.log_calibration() before the verdict is finalized."
+  },
+  "paper_writer": {
+    "verifier_role": "code_reviewer",
+    "verifier_model": "claude-opus-4-7",
+    "trigger": "every paper draft revision before phase-close",
+    "max_iterations": 2,
+    "note": "code_reviewer is a different opus instance; checks technical claims independently of authorship"
+  },
+  "code_reviewer": {
+    "verifier_role": "evaluator",
+    "verifier_model": "claude-sonnet-4-6",
+    "trigger": "every APPROVED/BLOCKED verdict on a code change",
+    "max_iterations": 1,
+    "note": "evaluator (sonnet) cross-checks the verdict for completeness — did the reviewer cover the full diff, run tests, check ASan/UBSan, etc."
+  },
+  "evaluator": {
+    "verifier_role": null,
+    "trigger": "no verifier — evaluator IS the verifier role for phase closure"
+  },
+  "experimental_methodologist": {
+    "verifier_role": "scientific_reviewer",
+    "verifier_model": "claude-opus-4-7",
+    "trigger": "any experimental design proposed for a new program/phase",
+    "max_iterations": 2,
+    "note": "scientific_reviewer (different opus instance) gates 'would a reviewer accept the method?' — catches confounds methodologist may have missed"
+  },
+  "mechanism_extractor": {
+    "verifier_role": "red_team",
+    "verifier_model": "claude-opus-4-7",
+    "trigger": "any mechanism explanation accepted as truth by paper_writer",
+    "max_iterations": 2,
+    "note": "red_team adversarially seeks alternative explanations; mitigates 'shallow mechanism accepted as truth' failure mode"
+  },
+  "math_theorist": {
+    "verifier_role": "statistical_reviewer",
+    "verifier_model": "claude-opus-4-7",
+    "trigger": "any proposed bound, scaling law, or mathematical claim that gates a decision",
+    "max_iterations": 1,
+    "note": "statistical_reviewer cross-checks bounds and confidence intervals for mathematical rigor"
+  }
+}

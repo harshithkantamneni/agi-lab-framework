@@ -1,0 +1,156 @@
+# =============================================================================
+# AGI Lab Framework — .gitignore
+#
+# The lab's runtime generates a lot of research-output state that should NEVER
+# be committed. This file blocks the major leak vectors. If you add new
+# substrate that produces persistent state, append to this list.
+# =============================================================================
+
+# ----------------------------------------------------------------------------
+# Build artifacts & local-only
+# ----------------------------------------------------------------------------
+.venv/
+build/
+__pycache__/
+*.pyc
+*.pyo
+*.so
+*.o
+*.air
+*.metallib
+*.dylib
+.pytest_cache/
+.mypy_cache/
+.cache/
+.DS_Store
+*.swp
+*.swo
+.idea/
+.vscode/
+*.xcworkspace/
+*.xcuserdata/
+compile_commands.json
+Thumbs.db
+
+# ----------------------------------------------------------------------------
+# Secrets (NEVER COMMIT)
+# ----------------------------------------------------------------------------
+.env
+*.key
+*.pem
+
+# ----------------------------------------------------------------------------
+# Claude Code / superpowers session state
+# ----------------------------------------------------------------------------
+.claude/
+.superpowers/
+.remember/
+
+# ----------------------------------------------------------------------------
+# Research output — your programs, your data, your story
+# ----------------------------------------------------------------------------
+programs/
+data/memories/
+data/archives/
+data/checkpoints/
+data/runs/
+data/work_queue/
+data/eval/
+data/engineering/
+data/findings/
+data/research/
+data/training/
+data/sessions/
+data/cycles/
+data/publish_candidates/
+data/scratch/
+data/experiments/
+data/papers/
+data/digests/
+data/diagnostics/
+data/reviews/
+data/org_retros/
+data/plots/
+data/summaries/
+data/staged_claude_agents/
+
+# ----------------------------------------------------------------------------
+# Per-agent accumulated memory
+#   Framework-defined procedural.md stays committed.
+#   Episodic + semantic memory accrues from your research → never commit.
+# ----------------------------------------------------------------------------
+data/agents/*/episodic/
+data/agents/*/semantic.md
+
+# ----------------------------------------------------------------------------
+# Runtime state files (regenerable; some have research content)
+# ----------------------------------------------------------------------------
+data/state.md
+data/decisions*.md
+data/director_log.md
+data/pi_notes.md
+data/shared_knowledge.md
+data/killed_ideas.md
+data/mission_reframe_*.md
+data/user_notes.md
+data/session_exit.md
+data/session_exit*.md
+data/session_state.md
+data/bibliography.md
+data/experiments.db
+data/benchmark_tracker.md
+data/cycle_queue.md
+data/roadmap.md
+data/contradictions.md
+data/knowledge_graph.md
+data/system_redesign.md
+data/accountability_ledger.md
+data/evaluator_report.md
+data/engineering_plan*.md
+data/generalpurpose_log.md
+data/lab_memory.db
+data/values.md
+data/procedures.md
+data/index.md
+
+# ----------------------------------------------------------------------------
+# Built retrieval indexes (regenerable from the corpus)
+# ----------------------------------------------------------------------------
+tools/lab_memory.db
+tools/lab_bm25.json
+tools/lab_graph.db
+
+# ----------------------------------------------------------------------------
+# Logs & telemetry
+# ----------------------------------------------------------------------------
+data/infra/*.log
+data/infra/*.jsonl
+data/infra/*.tsv
+data/infra/session_logs/
+data/infra/eval_p11_*
+data/infra/substrate_changelog_cursor
+data/infra/rate_limit_*
+
+# ----------------------------------------------------------------------------
+# Operator-personal substrate journal & one-off memos
+# ----------------------------------------------------------------------------
+SUBSTRATE_CHANGELOG.md
+SESSION_HANDOFF*.md
+PUBLISHING.md
+*_DIAGNOSIS*.md
+
+# ----------------------------------------------------------------------------
+# HuggingFace model cache (outside repo by default, but just in case)
+# ----------------------------------------------------------------------------
+**/.huggingface/
+**/hub/
+
+# ----------------------------------------------------------------------------
+# OS / editor cruft
+# ----------------------------------------------------------------------------
+*.tmp
+*.bak
+*.orig
+.Trashes/
+.fseventsd/
+.Spotlight-V100/
