@@ -185,6 +185,18 @@ class LabMemory:
 
         with self._conn() as conn:
             cur = conn.cursor()
+            # Replace any existing chunks for this file so re-ingest is
+            # idempotent. Without this, ingest_incremental() (which re-calls
+            # ingest() for every changed file) kept INSERTing new chunk rows
+            # on top of the old ones, so the corpus grew unbounded duplicates
+            # of every edited file. memories_vec is keyed by the memories rowid,
+            # so delete its rows by the ids we are about to remove.
+            old_ids = cur.execute(
+                "SELECT id FROM memories WHERE source_path = ?", (source_path,)
+            ).fetchall()
+            for (old_id,) in old_ids:
+                cur.execute("DELETE FROM memories_vec WHERE rowid = ?", (old_id,))
+            cur.execute("DELETE FROM memories WHERE source_path = ?", (source_path,))
             for chunk, emb in zip(chunks, embeddings):
                 cur.execute(
                     """INSERT INTO memories

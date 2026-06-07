@@ -168,7 +168,7 @@ test: test-build ## Run all tests
 		MTL_DEBUG_LAYER=1 $$t || exit 1; \
 	done
 	@echo "=== Running Python tests ==="
-	@source .venv/bin/activate && python -m pytest tests/ -v 2>/dev/null || true
+	@source .venv/bin/activate && python -m pytest tests/ -v
 	@echo "=== All tests passed ==="
 
 .PHONY: test-python
