@@ -120,3 +120,11 @@ zc.lockfile==4.0
 # Added 2026-04-17 for tools/lab_memory.py (scientific-research-lab-overhaul)
 sentence-transformers
 sqlite-vec
+# Retrieval L2 (BM25). Required by tools/retrieval/bm25.py — without it the
+# hybrid retriever degrades to dense-only on every query.
+rank_bm25==0.2.2
+
+# Optional: Slack notifier (tools/slack_bot.py, `make slack-bot-start`).
+# Not needed for the core lab/runner; only the Slack integration imports these.
+slack-bolt
+pytz
