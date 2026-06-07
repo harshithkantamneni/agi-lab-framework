@@ -83,14 +83,14 @@ def test_active_program_block_extracted_from_current_md(tmp_path):
     (tmp_path / "data/memories/current.md").write_text(
         "# Current\n"
         "## §Current Program\n"
-        "active_program: program_2_dense_vs_moe_sub100m\n"
+        "active_program: program_2_example\n"
         "phase: 3\n"
         "status_line: B42 step 400/5000 plateau-center\n"
         "## Some other section\n"
         "irrelevant content\n"
     )
     brief = assemble_brief(tmp_path)
-    assert "program_2_dense_vs_moe_sub100m" in brief
+    assert "program_2_example" in brief
     assert "phase: 3" in brief
     assert "B42 step 400/5000 plateau-center" in brief
 
@@ -180,11 +180,11 @@ def test_decision_critical_files_for_phase_transition(tmp_path):
     (tmp_path / "data/memories").mkdir(parents=True)
     (tmp_path / "data/memories/log.md").write_text("D-1: x\n")
     (tmp_path / "data/memories/current.md").write_text(
-        "active_program: program_2_dense_vs_moe_sub100m\n"
+        "active_program: program_2_example\n"
     )
-    (tmp_path / "programs/program_2_dense_vs_moe_sub100m").mkdir(parents=True)
-    (tmp_path / "programs/program_2_dense_vs_moe_sub100m/phase3_close_carry_forwards.md").write_text("x")
-    (tmp_path / "programs/program_2_dense_vs_moe_sub100m/spec.md").write_text("x")
+    (tmp_path / "programs/program_2_example").mkdir(parents=True)
+    (tmp_path / "programs/program_2_example/phase3_close_carry_forwards.md").write_text("x")
+    (tmp_path / "programs/program_2_example/spec.md").write_text("x")
     # Force phase-transition
     (tmp_path / "data/checkpoints/phase3_factorial").mkdir(parents=True)
     idx = tmp_path / "data/checkpoints/phase3_factorial/run_index.json"

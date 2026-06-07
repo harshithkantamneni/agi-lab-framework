@@ -256,7 +256,7 @@ runner_pid: 54821
 runner_session: s-1234
 ---
 # Session brief
-Active program: program_2_dense_vs_moe_sub100m (Phase 2 pre-flight, blocked on P-METAL-1)
+Active program: program_2_example (Phase 2 pre-flight, blocked on P-METAL-1)
 Last decision: D-116 (Phase 2 pre-flight close, 2026-04-18)
 Next step: resolve P-METAL-1 (metallib build) → dispatch engineer
 Rate-limit: clean

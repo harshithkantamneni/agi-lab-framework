@@ -15,7 +15,7 @@ from tools.retrieval.metadata import canonical_program_from_text, derive_metadat
 # ---- program_id from the programs/ directory (explicit table, not regex) ----
 
 def test_program_2_short_id():
-    m = derive_metadata("programs/program_2_dense_vs_moe_sub100m/x.md", "body")
+    m = derive_metadata("programs/program_2_example/x.md", "body")
     assert m["program_id"] == "program_2"
 
 
@@ -69,14 +69,14 @@ def test_global_shared_knowledge_program_role():
 # ---- content-based program tagging (whole-file text) ----
 
 def test_two_programs_in_text_is_ambiguous_empty():
-    text = "program_1_opus47_on_18gb and also program_2_dense_vs_moe_sub100m"
+    text = "program_1_example and also program_2_example"
     assert canonical_program_from_text(text) == ""
     m = derive_metadata("data/memories/log.md", text)
     assert m["program_id"] == ""
 
 
 def test_exactly_one_whitelisted_program_in_text():
-    text = "we focus on program_2_dense_vs_moe_sub100m for the dense baselines"
+    text = "we focus on program_2_example for the dense baselines"
     assert canonical_program_from_text(text) == "program_2"
     m = derive_metadata("data/memories/log.md", text)
     assert m["program_id"] == "program_2"
@@ -98,8 +98,8 @@ def test_metaphase_does_not_misfire():
 
 def test_global_file_cross_program_text_is_empty_program():
     text = (
-        "mission spanning program_1_opus47_on_18gb and "
-        "program_3_alt_grad_qat_100m across the lab"
+        "mission spanning program_1_example and "
+        "program_3_example across the lab"
     )
     m = derive_metadata("data/memories/mission.md", text)
     assert m["program_id"] == ""
@@ -136,8 +136,8 @@ def test_ingest_auto_tags_program_from_path(tmp_path, monkeypatch):
     # derive_metadata keys off the source_path string. Open the real temp file
     # for content but record the canonical relative path as source_path by
     # symlinking the expected directory structure under tmp_path.
-    src_rel = "programs/program_2_dense_vs_moe_sub100m/x.md"
-    nested = tmp_path / "programs" / "program_2_dense_vs_moe_sub100m"
+    src_rel = "programs/program_2_example/x.md"
+    nested = tmp_path / "programs" / "program_2_example"
     nested.mkdir(parents=True)
     (nested / "x.md").write_text(
         "dense vs moe sub-100m experiment notes\n", encoding="utf-8"
@@ -165,8 +165,8 @@ def test_ingest_explicit_metadata_wins(tmp_path, monkeypatch):
 
     from tools.lab_memory import LabMemory, EMBEDDING_DIM
 
-    src_rel = "programs/program_2_dense_vs_moe_sub100m/x.md"
-    nested = tmp_path / "programs" / "program_2_dense_vs_moe_sub100m"
+    src_rel = "programs/program_2_example/x.md"
+    nested = tmp_path / "programs" / "program_2_example"
     nested.mkdir(parents=True)
     (nested / "x.md").write_text("body text\n", encoding="utf-8")
 

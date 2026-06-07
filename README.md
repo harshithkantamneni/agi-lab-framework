@@ -9,13 +9,12 @@
 - **Scale:** ~74,200 LOC (raw `wc -l`), 283 development commits over ~7.1 weeks (this public repo is a curated snapshot of that work), including a ~19,600-LOC native engine (15,573 C / 2,740 headers / 1,047 Metal / 233 Swift) and ~19,000 lines of Python tooling.
 - **Engine:** transformer training from scratch on Apple Silicon, Accelerate/CPU is the production path; a Metal GPU matmul path is built and tested but dormant.
 - **Agent org:** 31 specialized roles (PI, Director, statisticians, engineers, reviewers) wielding 64 tools under a tmux runner, with pre-registration discipline and anti-forgery sign-offs.
-- **Retrieval:** 4-layer hybrid-RAG over 62,364 chunks / 497 files, 384-dim dense embeddings + BM25 + a 1,277-node / 8,396-edge knowledge graph; ~32 ms warm queries.
-- **Research output:** 2 pre-registered programs to formal closure (3rd active); 4 paper drafts + 3 typeset IEEE PDFs, including a documented null result.
-- **Tests & cost:** 777 Python test functions + 269 C (Unity) cases; operated for $3,293 across 134 sessions, fully local, zero cloud.
+- **Retrieval:** 4-layer hybrid-RAG (384-dim dense embeddings + BM25 + a token knowledge graph) with ~32 ms warm queries, fully local, zero cloud.
+- **Tests:** 777 Python test functions + 269 C (Unity) cases.
 
-**What's in this repo:** the full framework, native engine, 31-agent organization, 4-layer retrieval, build system, and test suite. See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the deep technical map and **[RESULTS.md](RESULTS.md)** for reference-deployment results and papers.
+**What's in this repo:** the full framework, native engine, 31-agent organization, 4-layer retrieval, build system, and test suite. See **[ARCHITECTURE.md](ARCHITECTURE.md)** for the deep technical map.
 
-**Honest framing:** the trained models are tiny, research-scale LMs (a 48M-param model benchmarks at/near random, expected at this size, never claimed as capability). The value is the *system* and the *rigorous method*: a documented null result, formal decision rules, and a "beat-Opus" target this lab itself proved unreachable at this scale.
+**Honest framing:** the trained models are tiny, research-scale LMs (a 48M-param model benchmarks at/near random, expected at this size, never claimed as capability). The value is the *system* and the *rigorous method*: honest reporting of null results, formal decision rules, and a "beat-Opus" target the framework is built to test rather than assume.
 
 ---
 
@@ -29,7 +28,6 @@ This repo is the **framework only**, code, agent role definitions, runner orches
 
 - [What this is](#what-this-is)
 - [Architecture (deep technical map)](ARCHITECTURE.md)
-- [Results & papers](RESULTS.md)
 - [Architecture](#architecture)
 - [Hardware & API requirements](#hardware--api-requirements)
 - [Setup](#setup)
@@ -61,7 +59,7 @@ The lab operates autonomously: the Director runs in a continuous loop, claims wo
 - **Anti-forgery (D-109 pattern)**, PI/Director must personally edit their own sign-off blocks; orthogonal verifier checks integrity
 - **One sized job per session**, atomic units of work that complete within ~10% of a session's context capacity
 
-This framework has previously produced one publication-ready envelope paper (negative result, ~118 KB methodology paper) and one closed pre-registered comparison study (Dense vs MoE at sub-100M params with formal four-outcome decision rule). Both followed the full 15-phase lifecycle described below.
+A research program runs end-to-end through the full 15-phase lifecycle described below, from locking a question to producing a typeset paper under formal multi-outcome decision rules.
 
 ---
 

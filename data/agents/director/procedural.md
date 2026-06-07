@@ -430,21 +430,21 @@ enqueue({
 
 ### Worked Agent-tool invocation example
 
-For an `evaluator` call at end of Phase 2 of program_1_opus47_on_18gb:
+For an `evaluator` call at end of Phase 2 of program_1_example:
 
 ```
 Agent(
     subagent_type: "evaluator",
     model: "claude-opus-4-7",
     description: "Phase 2 evaluator gate",
-    prompt: "Phase 2 of program_1_opus47_on_18gb (SQ1 benchmark-floor pinning) is proposed for close.
+    prompt: "Phase 2 of program_1_example (SQ1 benchmark-floor pinning) is proposed for close.
 
 Read your procedural at data/agents/evaluator/procedural.md and apply the 10-item checklist to this phase.
 
 Program context:
-- Question: programs/program_1_opus47_on_18gb/question.md
-- Phase 2 deliverable: programs/program_1_opus47_on_18gb/sq1_benchmark_floors.md
-- Phase 1 close state: all sub-step files in programs/program_1_opus47_on_18gb/*.md dated before 13:00 today
+- Question: programs/program_1_example/question.md
+- Phase 2 deliverable: programs/program_1_example/sq1_benchmark_floors.md
+- Phase 1 close state: all sub-step files in programs/program_1_example/*.md dated before 13:00 today
 
 Checklist inputs:
 - pi_notes.md directives (check compliance)
@@ -456,7 +456,7 @@ Checklist inputs:
 - Any code reviewed this phase → data/engineering/reviews/
 - Findings produced → data/findings/
 
-Archive previous data/evaluator_report.md to data/archives/evaluator/report_program_1_opus47_on_18gb_P1.md BEFORE writing the new one.
+Archive previous data/evaluator_report.md to data/archives/evaluator/report_program_1_example_P1.md BEFORE writing the new one.
 
 Write verdict to data/evaluator_report.md with Overall: PASS | PASS_WITH_FLAGS | FAIL.
 

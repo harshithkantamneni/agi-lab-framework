@@ -33,7 +33,7 @@ JSONL format. Each line is one item. Files are append-mostly; `pending → claim
   "id": "wq-2026-05-04-0001",
   "type": "phase_advance",
   "priority": "normal",
-  "program": "program_2_dense_vs_moe_sub100m",
+  "program": "program_2_example",
   "payload": {
     "from_phase": "P9",
     "to_phase": "P10",

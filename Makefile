@@ -395,7 +395,7 @@ run-phase3-factorial: scale ## Launch the Phase-3 12-run factorial (locked order
 	@echo "Wall budget: ~146.4h serialized (~6.1d) under PC-3 AMX-discipline"
 	@echo "B4 T1 trigger eval: after run 8 (C43)"
 	@echo "Apparatus design: data/engineering/d193_phase3_factorial_launch_design.md"
-	@echo "Spec: programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md §2.1 + §8"
+	@echo "Spec: programs/program_2_example/phase3_p6_prereg.md §2.1 + §8"
 	python3 tools/run_phase3_factorial.py
 
 .PHONY: run-phase3-factorial-dryrun
@@ -415,7 +415,7 @@ eval-p11: $(EVAL_HARNESS_P11) ## Run P11 benchmark scoring (12 cells x 4 benchma
 	    --checkpoint-base data/checkpoints/phase3_factorial \
 	    --output-dir $(P11_OUTPUT_DIR) \
 	    --tokenizer data/training/tokenizer_32k.bin \
-	    --output-json programs/program_2_dense_vs_moe_sub100m/benchmark_scores.json
+	    --output-json programs/program_2_example/benchmark_scores.json
 
 .PHONY: eval-p11-smoke
 eval-p11-smoke: ## Smoke test: single cell (A42) x 1 benchmark (MMLU, 100 items) for apparatus validation

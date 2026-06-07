@@ -6,7 +6,7 @@ JSON instead of pickle for safety (no arbitrary code execution risk on
 load). Rebuild cost: ~50-200ms for 11K chunks — negligible.
 
 Tokenization preserves canonical lab identifiers (D-420, P-D417-FOO,
-program_2_dense_vs_moe) by keeping hyphen-joined alphanumeric runs intact.
+program_2_example) by keeping hyphen-joined alphanumeric runs intact.
 """
 from __future__ import annotations
 import json

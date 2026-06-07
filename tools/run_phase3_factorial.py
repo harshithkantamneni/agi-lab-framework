@@ -25,9 +25,9 @@ Contract change history:
     Orphan archived to data/archives/2026-04-25/orphan_b4_t1_evaluator/.
     See data/engineering/d194_b4_t1_contract_reconcile.md for the closeout memo.
 
-Spec source-of-truth: programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md
+Spec source-of-truth: programs/program_2_example/phase3_p6_prereg.md
                       §2.1 (locked launch order) + §8 (B4 trigger) + §13 (LR pin).
-Runbook:              programs/program_2_dense_vs_moe_sub100m/phase3_p8_launch_apparatus.md.
+Runbook:              programs/program_2_example/phase3_p8_launch_apparatus.md.
 
 Idempotent: re-running the orchestration after interruption skips runs whose
 journal entry records `state=completed`. Each run's own checkpoint resume is
@@ -51,7 +51,7 @@ Pre-flight (run ONCE before launching cell 1):
      instruction the operator should run, then exit non-zero).
 
 The actual launch step (per cell) delegates to run_long.py with
-LAB_PROGRAM=program_2_dense_vs_moe_sub100m AND LAB_CELL=<A|B|C|D> exported,
+LAB_PROGRAM=program_2_example AND LAB_CELL=<A|B|C|D> exported,
 so the binary's config_drift_assert_or_die() runs at training boot and
 FATALs BEFORE step 0 on any of the 14 LR/dynamics fields not matching the
 cell-keyed manifest arm. LAB_CELL was added at D-194 (§10.3 of the launch
@@ -79,7 +79,7 @@ import run_long  # noqa: E402  pylint: disable=wrong-import-position
 # Locked launch matrix (prereg §2.1; do not modify)
 # --------------------------------------------------------------------------
 
-PROGRAM_NAME = "program_2_dense_vs_moe_sub100m"
+PROGRAM_NAME = "program_2_example"
 
 # Cell identity (architecture, LR). cell_letter ∈ {A, B, C, D} per prereg
 # §2.1 table; the order in this dict is the *natural* cell-order, NOT the

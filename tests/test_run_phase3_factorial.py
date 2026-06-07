@@ -16,7 +16,7 @@ Coverage spec (per D-193 dispatch + design doc §11.1):
 All tests mock subprocess.call so no real `scale_experiment` is invoked.
 
 Reference: data/engineering/d193_phase3_factorial_launch_design.md
-Spec source: programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md §2.1 + §8.
+Spec source: programs/program_2_example/phase3_p6_prereg.md §2.1 + §8.
 """
 
 from __future__ import annotations
@@ -186,7 +186,7 @@ def test_state_machine_skips_completed_cells(tmp_path, monkeypatch):
     # Populate run_index.json with 3 cells already completed.
     idx = {
         "_meta": {
-            "program": "program_2_dense_vs_moe_sub100m",
+            "program": "program_2_example",
             "lock_fingerprint": "test_fingerprint",
             "launch_order": [f"{c}{s}" for c, s in run_phase3_factorial.LAUNCH_ORDER],
             "b4_t1_eval_after_run": 8,
@@ -354,7 +354,7 @@ def test_spec_fingerprint_snapshot_written_on_first_invocation(tmp_path, monkeyp
     )
 
     fp = run_phase3_factorial.preflight_fingerprint(strict_lock_check=True)
-    assert fp == "program_2_dense_vs_moe_sub100m:abc123def456"
+    assert fp == "program_2_example:abc123def456"
     assert lock_fp_path.is_file()
     assert lock_fp_path.read_text().strip() == fp
 
@@ -364,7 +364,7 @@ def test_spec_fingerprint_drift_blocks_strict(tmp_path, monkeypatch):
     phase3_root = tmp_path / "data" / "checkpoints" / "phase3_factorial"
     phase3_root.mkdir(parents=True, exist_ok=True)
     lock_fp_path = phase3_root / "lock_fingerprint.txt"
-    lock_fp_path.write_text("program_2_dense_vs_moe_sub100m:original12\n")
+    lock_fp_path.write_text("program_2_example:original12\n")
 
     monkeypatch.setattr(run_phase3_factorial, "PHASE3_ROOT", str(phase3_root))
     monkeypatch.setattr(run_phase3_factorial, "LOCK_FP_PATH", str(lock_fp_path))
@@ -388,7 +388,7 @@ def test_spec_fingerprint_match_passes(tmp_path, monkeypatch):
     phase3_root = tmp_path / "data" / "checkpoints" / "phase3_factorial"
     phase3_root.mkdir(parents=True, exist_ok=True)
     lock_fp_path = phase3_root / "lock_fingerprint.txt"
-    expected_fp = "program_2_dense_vs_moe_sub100m:matching42"
+    expected_fp = "program_2_example:matching42"
     lock_fp_path.write_text(expected_fp + "\n")
 
     monkeypatch.setattr(run_phase3_factorial, "PHASE3_ROOT", str(phase3_root))
@@ -539,7 +539,7 @@ def test_seeds_locked_to_42_43_44():
 
 def test_program_name_locked():
     """PROGRAM_NAME is the binding program for D-181/D-191/D-192/D-193 lockset."""
-    assert run_phase3_factorial.PROGRAM_NAME == "program_2_dense_vs_moe_sub100m"
+    assert run_phase3_factorial.PROGRAM_NAME == "program_2_example"
 
 
 # ---------------------------------------------------------------------------
@@ -821,7 +821,7 @@ def test_real_run_treats_dry_run_residue_as_not_done(tmp_path, monkeypatch):
     # Reproduce the D-212 residue shape: 12 entries, all completed-and-dry-run.
     residue = {
         "_meta": {
-            "program": "program_2_dense_vs_moe_sub100m",
+            "program": "program_2_example",
             "lock_fingerprint": "test",
             "launch_order": [f"{c}{s}" for c, s in run_phase3_factorial.LAUNCH_ORDER],
             "b4_t1_eval_after_run": 8,
@@ -952,7 +952,7 @@ def test_real_run_still_skips_genuine_completions(tmp_path, monkeypatch):
 # `--seq-len` from build_cell_cmd fails loud at test time, NOT after
 # Director schedules a launch and the binary FATALs ~30 seconds in.
 #
-# Spec source: programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml
+# Spec source: programs/program_2_example/spec_invariants.yaml
 #              (all 6 arms pinned to seq_len=512; locked, no amendment).
 # ---------------------------------------------------------------------------
 

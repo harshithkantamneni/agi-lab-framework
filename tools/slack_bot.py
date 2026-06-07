@@ -314,7 +314,7 @@ def _current_program_phase() -> tuple[str, str]:
     """Return (program_slug, phase_short) — clean strings, never raw junk.
 
     program_slug: the lab's canonical program identifier (e.g.
-                  `program_2_dense_vs_moe_sub100m`), pulled from the first
+                  `program_2_example`), pulled from the first
                   occurrence of the `program_<slug>` token in current.md.
     phase_short:  e.g. `P3 OPEN` or `P3 EXECUTE` — Phase number + first
                   matching state keyword. Falls back to `P<N>` or

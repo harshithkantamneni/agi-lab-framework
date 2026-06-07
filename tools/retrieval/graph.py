@@ -3,7 +3,7 @@
 Nodes:
     decision      D-N entries (e.g. "D-420")
     carry_forward P-* tokens (e.g. "P-D417-ARTIFACT-PROJECTOR-DEDUP-GAP")
-    program       Program identifiers (e.g. "program_2_dense_vs_moe_sub100m")
+    program       Program identifiers (e.g. "program_2_example")
     phase         Phase IDs scoped per program (e.g. "Phase 3", "P11")
     role          Agent role names (e.g. "director", "pi", "lab_architect")
     file          Source markdown file paths

@@ -89,7 +89,7 @@ HSPAConfig hspa_config_medium(void);
  * Target: 119,649,024 params (~119.6M). */
 HSPAConfig hspa_config_100m(void);
 
-/* Dense-A compute-matched control for Program 2 (dense_vs_moe_sub100m).
+/* Dense-A compute-matched control (compute-matched dense baseline vs the MoE model).
  * data/engineering/dense_50m_control_design.md §1.3 + question.md locked form.
  * L=8, D=512, H=8, H_kv=4, D_h=64, D_ff=768, V=32768, K=1, k=1, S=512.
  * Target: 34,619,904 params (~34.62M) — matches MoE Rev-2 active path

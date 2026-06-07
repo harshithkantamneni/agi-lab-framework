@@ -25,7 +25,7 @@
  * Required fields per arm: model, tokenizer_basename, vocab_size, param_count_total
  * Optional field: param_count_active (only meaningful for MoE arms)
  *
- * Example manifest (programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml):
+ * Example manifest (programs/program_2_example/spec_invariants.yaml):
  *   arm = dense50m
  *   model = dense50m
  *   tokenizer_basename = tokenizer_32k.bin

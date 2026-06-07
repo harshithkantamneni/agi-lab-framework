@@ -137,7 +137,7 @@ HSPAConfig hspa_config_100m(void) {
 
 /* ---- Dense-A compute-matched control (~34.62M params) ----
  * Per data/engineering/dense_50m_control_design.md §1.3 and
- * programs/program_2_dense_vs_moe_sub100m/question.md operational form.
+ * programs/program_2_example/question.md operational form.
  *
  * FLOPs-matched to Rev-2 MoE active path:
  *   MoE active FFN FLOPs ∝ k * d_ff_moe = 2 * 384 = 768

@@ -54,11 +54,11 @@ def test_extract_carry_forward_tokens():
 def test_extract_program_phase_role():
     from tools.retrieval.graph import extract_program_refs, extract_phase_refs, extract_role_refs
     text = (
-        "In program_2_dense_vs_moe_sub100m Phase 3 P11, the director dispatched "
+        "In program_2_example Phase 3 P11, the director dispatched "
         "findings_curator and lab_architect."
     )
     progs = extract_program_refs(text)
-    assert "program_2_dense_vs_moe_sub100m" in progs
+    assert "program_2_example" in progs
     phases = extract_phase_refs(text)
     assert any("Phase 3" in p or "P11" in p for p in phases)
     roles = extract_role_refs(text)
@@ -177,15 +177,15 @@ def test_phase_nodes_qualified_by_program_no_collision(tmp_path):
     """'Phase 3' in two DIFFERENT programs must not collapse to one node (#3b)."""
     import sqlite3
     db = _build_corpus(tmp_path, {
-        "a.md": "### D-1 (x): body\n\nIn program_2_dense_vs_moe_sub100m Phase 3.\n",
-        "b.md": "### D-2 (x): body\n\nIn program_3_alt_grad_qat_100m Phase 3.\n",
+        "a.md": "### D-1 (x): body\n\nIn program_2_example Phase 3.\n",
+        "b.md": "### D-2 (x): body\n\nIn program_3_example Phase 3.\n",
     })
     with sqlite3.connect(db) as conn:
         pids = {r[0] for r in conn.execute("SELECT id FROM nodes WHERE type='phase'")}
         cols = conn.execute(
             "SELECT program, phase FROM nodes WHERE type='phase'").fetchall()
-    assert "phase:program_2_dense_vs_moe_sub100m:Phase 3" in pids
-    assert "phase:program_3_alt_grad_qat_100m:Phase 3" in pids
+    assert "phase:program_2_example:Phase 3" in pids
+    assert "phase:program_3_example:Phase 3" in pids
     assert "phase:Phase 3" not in pids, "phase node collapsed across programs"
     assert all(prog and ph for prog, ph in cols), "program/phase columns not populated"
 
@@ -195,7 +195,7 @@ def test_phase_and_role_nodes_are_not_orphans(tmp_path):
     PPR mass and are dead weight (#3c)."""
     import sqlite3
     db = _build_corpus(tmp_path, {
-        "a.md": "### D-1 (x): body\n\nprogram_2_dense_vs_moe_sub100m Phase 3; "
+        "a.md": "### D-1 (x): body\n\nprogram_2_example Phase 3; "
                 "the director dispatched findings_curator.\n",
     })
     with sqlite3.connect(db) as conn:
@@ -212,15 +212,15 @@ def test_in_program_only_on_single_program_files(tmp_path):
     single-program file links its decisions to that one program (#3d)."""
     import sqlite3
     db = _build_corpus(tmp_path, {
-        "multi.md": "### D-10 (x): body\n\nMentions program_2_dense_vs_moe_sub100m "
-                    "and program_3_alt_grad_qat_100m.\n",
-        "single.md": "### D-20 (x): body\n\nOnly program_3_alt_grad_qat_100m here.\n",
+        "multi.md": "### D-10 (x): body\n\nMentions program_2_example "
+                    "and program_3_example.\n",
+        "single.md": "### D-20 (x): body\n\nOnly program_3_example here.\n",
     })
     with sqlite3.connect(db) as conn:
         in_prog = {(s, d) for s, d in conn.execute(
             "SELECT src, dst FROM edges WHERE edge_type='in_program'")}
     assert not any(s == "D-10" for s, d in in_prog), f"fan-out on multi-program file: {in_prog}"
-    assert ("D-20", "program_3_alt_grad_qat_100m") in in_prog
+    assert ("D-20", "program_3_example") in in_prog
 
 
 def test_personalized_pagerank_basic(tmp_path):

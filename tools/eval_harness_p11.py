@@ -718,7 +718,7 @@ def parse_args() -> argparse.Namespace:
     p.add_argument(
         "--output-json",
         type=Path,
-        default=REPO_ROOT / "programs/program_2_dense_vs_moe_sub100m/benchmark_scores.json",
+        default=REPO_ROOT / "programs/program_2_example/benchmark_scores.json",
         help="Path for aggregate benchmark_scores.json (full run only).",
     )
     p.add_argument(

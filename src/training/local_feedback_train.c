@@ -9,7 +9,7 @@
  *   Launay, Poli & Krzakala 2019, arXiv 1906.04554 — B_l orthogonal init
  *     (Haar-uniform via Modified Gram-Schmidt QR, §3.2/Table 2)
  *
- * Spec: programs/program_3_alt_grad_qat_100m/p7_qat_coverage_architecture.md
+ * Spec: programs/program_3_example/p7_qat_coverage_architecture.md
  *       §2 (QATContext), §3 (224-coverage proof Arm C), §6 (LocalFB forward-
  *       compat), §8 (gate clauses).
  *

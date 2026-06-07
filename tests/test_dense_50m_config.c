@@ -1,7 +1,7 @@
 /* test_dense_50m_config.c -- Tests for Dense-A (Program 2 compute-matched control) config.
  *
  * Validates the `hspa_config_dense_50m_a()` factory required as apparatus for
- * Program 2 (dense_vs_moe_sub100m) PC-1 pre-flight.
+ * Dense-50M config PC-1 pre-flight.
  *
  * Pre-reg spec (dense_50m_control_design.md §1.3, question.md operational form):
  *   L=8, D=512, H=8, n_kv_heads=4, head_dim=64, d_ff=768, V=32768,

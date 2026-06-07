@@ -151,7 +151,7 @@ static int run_in_subprocess(child_fn_t body, void *ctx,
 
 /* ---- canonical "all 14 fields match dense50m" runtime constructor ----
  *
- * The values match programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml
+ * The values match programs/program_2_example/spec_invariants.yaml
  * dense50m arm (D-181 pinned). Mismatch tests below mutate ONE field then
  * invoke the assert; full-match tests use this struct unmodified.
  *
@@ -211,7 +211,7 @@ static void make_medium_runtime_full(ConfigDriftRuntime *rt) {
  * Program 2 manifest from the repo. LAB_PROGRAM_ROOT defaults to "programs"
  * which is the working-tree relative path the test harness runs from. */
 static void enter_program_2_env(void) {
-    setenv("LAB_PROGRAM", "program_2_dense_vs_moe_sub100m", 1);
+    setenv("LAB_PROGRAM", "program_2_example", 1);
     /* LAB_PROGRAM_ROOT intentionally NOT set: defaults to "programs" =
      * relative path that resolves at test cwd (repo root via `make test`). */
     unsetenv("LAB_PROGRAM_ROOT");
@@ -221,7 +221,7 @@ static void enter_program_2_env(void) {
 
 static void test_manifest_parses_with_lr_pin(void) {
     const char *path =
-        "programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml";
+        "programs/program_2_example/spec_invariants.yaml";
 
     ConfigDriftManifest mf;
     config_drift_manifest_init(&mf);
@@ -334,7 +334,7 @@ static bool contains_in_range(const char *start, const char *end,
 
 static void test_manifest_lr_values_expected(void) {
     const char *path =
-        "programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml";
+        "programs/program_2_example/spec_invariants.yaml";
     size_t len = 0;
     char *text = slurp_file(path, &len);
     ASSERT_NOT_NULL(text);

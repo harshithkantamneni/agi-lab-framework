@@ -2461,7 +2461,7 @@ Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
 **Do NOT start Stage 4 until Program 2 Phase 2 closes.** Check via:
 
 ```bash
-grep -l "Phase 2.*close\|Phase 2 → Phase 3" data/director_log.md programs/program_2_dense_vs_moe_sub100m/meta/*.md 2>/dev/null
+grep -l "Phase 2.*close\|Phase 2 → Phase 3" data/director_log.md programs/program_2_example/meta/*.md 2>/dev/null
 ```
 
 If that check is empty, wait. Migration on a mid-phase live lab would break the running session.

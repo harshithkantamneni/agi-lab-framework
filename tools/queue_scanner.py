@@ -100,7 +100,7 @@ def _active_program(root: Path) -> str | None:
     m = re.search(r"(?m)^active_program[:\s]+([a-zA-Z0-9_\-]+)", prose)
     if m:
         return m.group(1).strip("`").strip()
-    # Also match the header style: ## Current Program: `program_2_dense_vs_moe_sub100m`
+    # Also match the header style: ## Current Program: `program_2_example`
     m2 = re.search(r"Current Program:\s*`([^`]+)`", prose)
     if m2:
         return m2.group(1).strip()

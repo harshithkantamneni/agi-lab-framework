@@ -2,7 +2,7 @@
  *
  * Program 3, Phase 7, increment-4c.  D-613, 2026-05-28.
  *
- * Spec: programs/program_3_alt_grad_qat_100m/p7_test1_prereg_adjudication.md §3.3
+ * Spec: programs/program_3_example/p7_test1_prereg_adjudication.md §3.3
  *       All three arms: backprop (Arm A) + iPC (Arm B) + LocalFB (Arm C).
  *
  * Gate verdict: integration ACCEPTED iff ALL four clauses pass for ALL arms.

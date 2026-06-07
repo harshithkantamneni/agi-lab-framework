@@ -336,7 +336,7 @@ programs/
 │   ├── infrastructure.md
 │   ├── data_assets.md
 │   └── bibliography_inherited.md
-├── program_1_opus47_on_18gb/
+├── program_1_example/
 │   ├── question.md                    (P1)
 │   ├── prior_work.md                  (P2)
 │   ├── theoretical_frame.md           (P3)

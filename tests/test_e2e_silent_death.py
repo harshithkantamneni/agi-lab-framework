@@ -57,10 +57,10 @@ def test_d313_silent_death_simulation_recovers(tmp_path, monkeypatch):
     item_id = wq.enqueue({
         "type": "phase_advance",
         "priority": "normal",
-        "program": "program_2_dense_vs_moe_sub100m",
+        "program": "program_2_example",
         "created_by": "test_d313_simulation",
         "payload": {
-            "program": "program_2_dense_vs_moe_sub100m",
+            "program": "program_2_example",
             "from_phase": "P9",
             "to_phase": "P10",
             "context": "P9 ANALYZE closed; advance to P10 mechanism extraction",
@@ -71,7 +71,7 @@ def test_d313_silent_death_simulation_recovers(tmp_path, monkeypatch):
     # 2. Subagent "produces" the deliverable matching the phase_advance schema
     #    (programs/{program}/phase{to_phase_num}_*.md)
     deliv = (
-        tmp_path / "programs/program_2_dense_vs_moe_sub100m"
+        tmp_path / "programs/program_2_example"
         / "phase10_mechanism_report.md"
     )
     deliv.parent.mkdir(parents=True)

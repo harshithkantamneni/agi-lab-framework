@@ -581,7 +581,7 @@ python3 tools/training_digest_aggregate.py phase3_factorial --regen
 
 - [ ] **Step 2: Cross-check claims**
 
-For each quantitative claim in `programs/program_2_dense_vs_moe_sub100m/phase10_mechanism_report.md` § 1-§ 8 about training-time signals, verify the digest captures it. Document any gaps as future-spec items.
+For each quantitative claim in `programs/program_2_example/phase10_mechanism_report.md` § 1-§ 8 about training-time signals, verify the digest captures it. Document any gaps as future-spec items.
 
 - [ ] **Step 3: Document any gaps**
 

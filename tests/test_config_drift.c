@@ -4,7 +4,7 @@
  * The drift detector compares the *actual* runtime config (model name, tokenizer file,
  * vocab_size, param counts) against a frozen per-program manifest. Activation is opt-in
  * via the LAB_PROGRAM env var:
- *   LAB_PROGRAM=program_2_dense_vs_moe_sub100m  → look for programs/<that>/spec_invariants.yaml
+ *   LAB_PROGRAM=program_2_example  → look for programs/<that>/spec_invariants.yaml
  *   LAB_PROGRAM unset                            → assertion is a no-op
  *
  * On mismatch the assertion prints "CONFIG-DRIFT FATAL: expected X, got Y" and calls

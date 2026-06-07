@@ -3,7 +3,7 @@
 
 Evaluates the T1 pooled-σ trigger after run 8 in the locked launch order
 A42 → D42 → B42 → C42 → A43 → D43 → B43 → C43, per the binding spec at
-``programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md`` §8.1 (1h Item 1
+``programs/program_2_example/phase3_p6_prereg.md`` §8.1 (1h Item 1
 verbatim, locked unanimous D-192) and §9.1 (math_theorist 1f σ-proxy chain).
 
     Trigger T1 fires if max_{i ∈ {HS, WG}} (σ̂_pooled,i / σ_ref,i) > 1.50
@@ -62,7 +62,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # σ_ref values from prereg §9.1 (math_theorist 1f §3.3 σ-proxy chain).
 # Madaan-7B → Pythia-160M → 34.7M-active scale-corrected estimates.
-# Source: programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md §9.1
+# Source: programs/program_2_example/phase3_p6_prereg.md §9.1
 SIGMA_REF: Dict[str, float] = {
     "HS": 1.0,  # HellaSwag, MEDIUM confidence band [0.5, 1.4]
     "WG": 1.4,  # WinoGrande, MEDIUM confidence band [0.7, 1.8]
@@ -70,7 +70,7 @@ SIGMA_REF: Dict[str, float] = {
 
 # T1 threshold, locked at 1h Item 1 verbatim (re-stamped at 1j §1 Item B4).
 # Strict comparison: ratio > 1.50 fires; ratio == 1.50 does NOT fire.
-# Source: programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md §8.1.
+# Source: programs/program_2_example/phase3_p6_prereg.md §8.1.
 T1_THRESHOLD: float = 1.50
 
 # df for the pooled-σ statistic. k=4 cells × (N=2 - 1 per cell) = 4.

@@ -7,7 +7,7 @@
  *   Nøkland 2016, arXiv 1609.01596 — Direct Feedback Alignment
  *   Lee et al. 2015, arXiv 1412.7525 — Difference Target Propagation
  *
- * Spec: programs/program_3_alt_grad_qat_100m/p7_qat_coverage_architecture.md
+ * Spec: programs/program_3_example/p7_qat_coverage_architecture.md
  *       §6 (LocalFB forward-compat), §3 (224-coverage proof), §8 (gate clauses).
  *
  * Naming note (P-D432-LFB-DEPRECATION-INVENTORY): the prefix "lfb_" is owned

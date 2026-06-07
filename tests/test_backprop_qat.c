@@ -2,7 +2,7 @@
  *
  * Program 3, Phase 7, increment-3c-i.  D-613, 2026-05-28.
  *
- * Spec: programs/program_3_alt_grad_qat_100m/p7_qat_coverage_architecture.md
+ * Spec: programs/program_3_example/p7_qat_coverage_architecture.md
  *       §3 (224-coverage proof), §8 (acceptance gates clauses 1 + 2).
  *
  * TDD: tests written BEFORE implementation in backprop_train.c (TDD Red phase).

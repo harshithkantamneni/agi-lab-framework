@@ -38,9 +38,9 @@ from tools.retrieval.graph import (
 # programs/<dir> -> canonical program_id (SHORT for numbered programs).
 _PROGRAM_DIR_TO_ID = {
     "program_0_retrospective": "program_0",
-    "program_1_opus47_on_18gb": "program_1",
-    "program_2_dense_vs_moe_sub100m": "program_2",
-    "program_3_alt_grad_qat_100m": "program_3",
+    "program_1_example": "program_1",
+    "program_2_example": "program_2",
+    "program_3_example": "program_3",
     "program_3_brainstorm": "program_3_brainstorm",
     "methodology_structural_anti_forgery": "methodology_structural_anti_forgery",
     "methodology_tiered_memory": "methodology_tiered_memory",
@@ -51,9 +51,9 @@ _PROGRAM_DIR_TO_ID = {
 # program_id, program_closure_*, program_4_, program_5_*, ...) is noise.
 _FULL_TOKEN_TO_ID = {
     "program_0_retrospective": "program_0",
-    "program_1_opus47_on_18gb": "program_1",
-    "program_2_dense_vs_moe_sub100m": "program_2",
-    "program_3_alt_grad_qat_100m": "program_3",
+    "program_1_example": "program_1",
+    "program_2_example": "program_2",
+    "program_3_example": "program_3",
     "program_3_brainstorm": "program_3_brainstorm",
 }
 

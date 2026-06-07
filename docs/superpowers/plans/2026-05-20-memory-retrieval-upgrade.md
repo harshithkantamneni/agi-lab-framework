@@ -447,7 +447,7 @@ def test_node_types_constraint():
 Nodes:
     decision      D-N entries (e.g. "D-420")
     carry_forward P-* tokens (e.g. "P-D417-ARTIFACT-PROJECTOR-DEDUP-GAP")
-    program       Program identifiers (e.g. "program_2_dense_vs_moe_sub100m")
+    program       Program identifiers (e.g. "program_2_example")
     phase         Phase IDs scoped per program (e.g. "Phase 3", "P11")
     role          Agent role names (e.g. "director", "pi", "lab_architect")
     file          Source markdown file paths
@@ -563,11 +563,11 @@ def test_extract_carry_forward_tokens():
 def test_extract_program_phase_role():
     from tools.retrieval.graph import extract_program_refs, extract_phase_refs, extract_role_refs
     text = (
-        "In program_2_dense_vs_moe_sub100m Phase 3 P11, the director dispatched "
+        "In program_2_example Phase 3 P11, the director dispatched "
         "findings_curator and lab_architect."
     )
     progs = extract_program_refs(text)
-    assert "program_2_dense_vs_moe_sub100m" in progs
+    assert "program_2_example" in progs
     phases = extract_phase_refs(text)
     assert any("Phase 3" in p or "P11" in p for p in phases)
     roles = extract_role_refs(text)
@@ -678,7 +678,7 @@ git commit -m "feat(retrieval/graph): regex extractors for D-N, P-*, program, ph
 
 ```bash
 mkdir -p tests/retrieval/fixtures/sample_corpus/data/memories
-mkdir -p tests/retrieval/fixtures/sample_corpus/programs/program_2_dense_vs_moe_sub100m
+mkdir -p tests/retrieval/fixtures/sample_corpus/programs/program_2_example
 ```
 
 Write `tests/retrieval/fixtures/sample_corpus/data/memories/log.md`:
@@ -691,7 +691,7 @@ Write `tests/retrieval/fixtures/sample_corpus/data/memories/log.md`:
 ### D-432 (2026-05-19, ~21:43 UTC): **Program 3 lock 1i closed.**
 
 Carries forward P-D417-ARTIFACT-PROJECTOR-DEDUP-GAP. Resolves nothing this session.
-Dispatched: lab_architect, findings_curator. In program_2_dense_vs_moe_sub100m Phase 3 P11.
+Dispatched: lab_architect, findings_curator. In program_2_example Phase 3 P11.
 
 ### D-431 (2026-05-19, ~20:30 UTC): **Director synthesis delivered.**
 
@@ -1279,7 +1279,7 @@ JSON instead of pickle for safety (no arbitrary code execution risk on
 load). Rebuild cost: ~50-200ms for 11K chunks — negligible.
 
 Tokenization preserves canonical lab identifiers (D-420, P-D417-FOO,
-program_2_dense_vs_moe) by keeping hyphen-joined alphanumeric runs intact.
+program_2_example) by keeping hyphen-joined alphanumeric runs intact.
 """
 from __future__ import annotations
 import json

@@ -4,7 +4,7 @@
  * Background (D-181 → D-190 → D-191):
  *   D-181 stat-review surfaced a 2× LR confound in Phase-2 (Dense-A LR=2e-3 vs
  *   MoE Rev-2 LR=1e-3). D-181 pinned 14 LR/schedule/dynamics fields per arm in
- *   programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml. D-190 1i locked
+ *   programs/program_2_example/spec_invariants.yaml. D-190 1i locked
  *   the Phase-3 2×2 factorial design where silent LR drift is now a verdict-
  *   breaking risk. D-191 Phase-3 P7 apparatus pre-flight wires the binary-side
  *   integration: scale_experiment.c populates ConfigDriftRuntime with LIVE
@@ -161,7 +161,7 @@ static int run_in_subprocess(child_fn_t body, void *ctx,
 
 /* ---- Canonical D-181 manifest text (used by tests 1-4) ----
  *
- * Mirrors programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml exactly
+ * Mirrors programs/program_2_example/spec_invariants.yaml exactly
  * for the 14 D-181 fields. We embed it locally rather than reading the real
  * file so a future edit to the real manifest doesn't silently change test
  * semantics — the tests verify the integration *shape*, not the values per

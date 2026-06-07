@@ -135,7 +135,7 @@ def test_user_action_required_fires_on_first_sighting(
     fake_repo: pathlib.Path, slack_bot_module: Any
 ) -> None:
     """POSITIVE: a fresh USER_*.md file → exactly 1 URGENT event."""
-    _make_user_md(fake_repo, "program_2_dense_vs_moe_sub100m",
+    _make_user_md(fake_repo, "program_2_example",
                   "USER_GO_NOGO_DECISION.md",
                   decision="PENDING",
                   body="Decide GO/NOGO on the 146h Phase-3 factorial run.")
@@ -157,7 +157,7 @@ def test_user_action_required_fires_on_first_sighting(
     assert "GO/NOGO" in ev["text"] or "Phase-3" in ev["text"]
 
     # State mutation: file is now tracked.
-    rel = "programs/program_2_dense_vs_moe_sub100m/USER_GO_NOGO_DECISION.md"
+    rel = "programs/program_2_example/USER_GO_NOGO_DECISION.md"
     assert rel in state["user_action_files"]
     assert state["user_action_files"][rel]["decision_value"] == "PENDING"
 
@@ -167,7 +167,7 @@ def test_user_action_required_does_not_fire_when_no_user_files(
 ) -> None:
     """NEGATIVE: no USER_*.md present → empty event list, clean state."""
     # programs dir exists but contains NO USER_*.md (only a normal markdown).
-    program_dir = fake_repo / "programs" / "program_2_dense_vs_moe_sub100m"
+    program_dir = fake_repo / "programs" / "program_2_example"
     program_dir.mkdir(parents=True)
     (program_dir / "regular_doc.md").write_text("# Some other doc\n")
     state: dict = {}
@@ -189,7 +189,7 @@ def test_user_action_required_does_not_repost_within_six_hours(
     Pin the 6h re-post cadence (line 724: `repost_interval = 6 * 3600`).
     Bonus: also tests that the state correctly carries across calls.
     """
-    _make_user_md(fake_repo, "program_2_dense_vs_moe_sub100m",
+    _make_user_md(fake_repo, "program_2_example",
                   "USER_GO_NOGO_DECISION.md", decision="PENDING")
     state: dict = {}
 
@@ -564,10 +564,10 @@ def test_phase_boundary_fires_on_phase_transition(
     rather than the prior token-soup fingerprint.
     """
     _make_current_md(fake_repo,
-                     program="program_2_dense_vs_moe_sub100m",
+                     program="program_2_example",
                      phase="Phase 4 OPEN", status="EXECUTE")
     state: dict = {
-        "last_phase_summary_program": "program_2_dense_vs_moe_sub100m",
+        "last_phase_summary_program": "program_2_example",
         "last_phase_summary_phase": "P3 CLOSED",
     }
 
@@ -594,7 +594,7 @@ def test_phase_boundary_first_scan_records_baseline_no_post(
     record + return []. Prevents post-flood on bot startup.
     """
     _make_current_md(fake_repo,
-                     program="program_2_dense_vs_moe_sub100m",
+                     program="program_2_example",
                      phase="Phase 3 OPEN", status="EXECUTE")
     state: dict = {}  # no prior program/phase recorded
 
@@ -612,7 +612,7 @@ def test_phase_boundary_no_change_no_post(
 ) -> None:
     """NEGATIVE: identical state across two calls → second call returns []."""
     _make_current_md(fake_repo,
-                     program="program_2_dense_vs_moe_sub100m",
+                     program="program_2_example",
                      phase="Phase 3 OPEN", status="PRE-FLIGHT")
 
     state: dict = {}
@@ -632,10 +632,10 @@ def test_phase_boundary_urgent_on_victory_keyword(
 ) -> None:
     """A transition into a VICTORY-tagged phase → urgent=True / URGENT category."""
     _make_current_md(fake_repo,
-                     program="program_2_dense_vs_moe_sub100m",
+                     program="program_2_example",
                      phase="Phase 3 VICTORY", status="VICTORY")
     state: dict = {
-        "last_phase_summary_program": "program_2_dense_vs_moe_sub100m",
+        "last_phase_summary_program": "program_2_example",
         "last_phase_summary_phase": "P3 OPEN",
     }
 
@@ -673,13 +673,13 @@ def test_detectors_do_not_post_to_slack_when_called_directly(
 
     # Set up positive fixtures for all 3 detectors so they all WOULD fire if
     # they posted directly.
-    _make_user_md(fake_repo, "program_2_dense_vs_moe_sub100m",
+    _make_user_md(fake_repo, "program_2_example",
                   "USER_GO_NOGO_DECISION.md")
     _make_session_logs(fake_repo, n_short=6)
     _make_current_md(fake_repo, phase="Phase 3 CLOSED", status="VICTORY")
 
     state: dict = {
-        "last_phase_summary_program": "program_2_dense_vs_moe_sub100m",
+        "last_phase_summary_program": "program_2_example",
         "last_phase_summary_phase": "P3 PRE-FLIGHT",
     }
 

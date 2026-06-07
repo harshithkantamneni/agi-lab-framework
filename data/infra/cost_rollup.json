@@ -1,0 +1,55 @@
+{
+  "schema_version": "1.0",
+  "generated_at": "2026-06-07T04:32:34.772059Z",
+  "week": "2026-W22",
+  "date_range": [
+    "2026-05-25",
+    "2026-05-31"
+  ],
+  "since_ts": "2026-05-31T00:00:00+00:00",
+  "until_ts": "2026-06-07T23:59:59+00:00",
+  "total_cost_usd": 68.7285,
+  "total_input_tokens": 9775,
+  "total_output_tokens": 144538,
+  "total_cache_read_tokens": 5510221,
+  "session_count": 11,
+  "by_model": {
+    "claude-opus-4-7": {
+      "sessions": 11,
+      "input_tokens": 9775,
+      "output_tokens": 144538,
+      "cache_read_tokens": 5510221,
+      "cache_creation_tokens": 2638729,
+      "cost_usd": 68.72847525
+    }
+  },
+  "by_role": {
+    "director": {
+      "dispatches": 11,
+      "cost_usd": 68.72847525,
+      "model": "claude-opus-4-7",
+      "avg_cost_per_dispatch": 6.248043204545454
+    }
+  },
+  "wastage_events": {
+    "silent_death_recoveries": 0,
+    "post_director_errors": 0,
+    "failed_claims": 0,
+    "escalated_dispatches": 0,
+    "verifier_failures": 0,
+    "holding_loop_count": 0
+  },
+  "outlier_sessions": [
+    {
+      "session_id": "166cd0a3-4830-4b01-964b-fc79d80330cc",
+      "role": "director",
+      "cost_usd": 16.070718
+    },
+    {
+      "session_id": "d699f0dd-4f8d-4fff-89e5-1a95b525b09e",
+      "role": "director",
+      "cost_usd": 15.880311
+    }
+  ],
+  "delta_vs_previous_week": {}
+}

@@ -30,7 +30,7 @@ here is a fast-fail check; the curator re-validates against the full schema.
 
 Usage:
     # Process a single memo
-    python3 tools/append_publish_candidate.py programs/program_1_opus47_on_18gb/closure_memo.md
+    python3 tools/append_publish_candidate.py programs/program_1_example/closure_memo.md
 
     # Scan every program's closure_memo.md and write candidates for the eligible ones
     python3 tools/append_publish_candidate.py --all

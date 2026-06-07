@@ -1,6 +1,6 @@
 """Tests for tools/b4_t1_trigger.py — D-193 B4 T1 mechanical trigger evaluator.
 
-Spec source (BINDING): programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md
+Spec source (BINDING): programs/program_2_example/phase3_p6_prereg.md
 §8.1 (1h Item 1 verbatim) + §9.1 (σ-proxy chain σ_HS=1.0, σ_WG=1.4).
 
 Coverage matrix (per d193 design doc §7 test plan):

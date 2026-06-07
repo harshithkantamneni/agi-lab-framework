@@ -20,12 +20,12 @@ is for human consumption.
     {"old": "P9 ANALYZE CLOSED + P10 MECHANISM OPEN", "new": "P10 MECHANISM REPORT DELIVERED + P10 CLOSE GATE PENDING"}
   ],
   "deliverables": [
-    "programs/program_2_dense_vs_moe_sub100m/phase10_mechanism_report.md"
+    "programs/program_2_example/phase10_mechanism_report.md"
   ],
   "next_action": {
     "type": "phase_advance",
     "priority": "normal",
-    "program": "program_2_dense_vs_moe_sub100m",
+    "program": "program_2_example",
     "created_by": "director_session_d313",
     "payload": {
       "from_phase": "P10",

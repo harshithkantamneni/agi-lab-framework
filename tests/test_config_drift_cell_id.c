@@ -3,9 +3,9 @@
  * gated on PI+Director unanimous co-sign).
  *
  * D-194 BACKGROUND:
- *   Phase-3 of program_2_dense_vs_moe_sub100m runs a 2x2 factorial
+ *   Phase-3 of program_2_example runs a 2x2 factorial
  *   (architecture x LR) at N=3 per cell. The locked prereg
- *   (`programs/program_2_dense_vs_moe_sub100m/phase3_p6_prereg.md` D-192
+ *   (`programs/program_2_example/phase3_p6_prereg.md` D-192
  *   unanimous lock) defines:
  *
  *     | Cell | Architecture | LR    | --model    | --lr   |
@@ -217,7 +217,7 @@ static void make_cell_D_runtime_full(ConfigDriftRuntime *rt) {
 /* Establish LAB_PROGRAM env so the assertion loads the real Program 2
  * manifest. LAB_CELL is set by each test that needs cell-aware lookup. */
 static void enter_program_2_env(void) {
-    setenv("LAB_PROGRAM", "program_2_dense_vs_moe_sub100m", 1);
+    setenv("LAB_PROGRAM", "program_2_example", 1);
     unsetenv("LAB_PROGRAM_ROOT");
     unsetenv("LAB_CELL");
 }
@@ -226,7 +226,7 @@ static void enter_program_2_env(void) {
 
 static void test_manifest_parses_with_cell_id(void) {
     const char *path =
-        "programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml";
+        "programs/program_2_example/spec_invariants.yaml";
 
     ConfigDriftManifest mf;
     config_drift_manifest_init(&mf);
@@ -284,7 +284,7 @@ static void test_manifest_parses_with_cell_id(void) {
 
 static void test_find_arm_skips_cell_aware(void) {
     const char *path =
-        "programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml";
+        "programs/program_2_example/spec_invariants.yaml";
     ConfigDriftManifest mf;
     config_drift_manifest_init(&mf);
     ASSERT_EQUAL_INT(0, config_drift_load(path, &mf));
@@ -316,7 +316,7 @@ static void test_find_arm_skips_cell_aware(void) {
 
 static void test_find_arm_by_cell_returns_correct(void) {
     const char *path =
-        "programs/program_2_dense_vs_moe_sub100m/spec_invariants.yaml";
+        "programs/program_2_example/spec_invariants.yaml";
     ConfigDriftManifest mf;
     config_drift_manifest_init(&mf);
     ASSERT_EQUAL_INT(0, config_drift_load(path, &mf));
@@ -693,7 +693,7 @@ static void test_lab_cell_set_legacy_manifest(void) {
 
 static int child_lab_cell_unset_phase2_shape(void *ctx) {
     (void)ctx;
-    setenv("LAB_PROGRAM", "program_2_dense_vs_moe_sub100m", 1);
+    setenv("LAB_PROGRAM", "program_2_example", 1);
     unsetenv("LAB_PROGRAM_ROOT");
     unsetenv("LAB_CELL");
 

@@ -2,7 +2,7 @@
 
 > **What this document is.** A complete technical reference for the **AGI Lab Framework** — a from-scratch, fork-and-run stack for running an autonomous machine-learning research laboratory on a single 18 GB MacBook M3 Pro, with **no cloud and no ML frameworks**. It maps every subsystem shipped in this repository (what it does, how it works, how the pieces fit), gives the verified design/scale metrics, and tells you **where to find the code** for any part. Read it top-to-bottom or jump by section.
 >
-> **Framework vs. deployment.** This repo is the *reusable framework*: the native training engine, the autonomous agent organization, the retrieval memory, the build/telemetry/assessment tooling, and the governance protocols — everything you need to stand up your own lab. The author's own *reference deployment* of this framework — "**the AGI Lab**" — ran for ~7 weeks and produced the research results, decision history, trained checkpoints, and program corpus. That research output is **deliberately not included here** (it is a separate, private artifact). Wherever a metric or finding describes that specific run rather than the framework's design, it is marked **"Reference deployment (the AGI Lab)"** and kept brief, with a pointer to the sibling **`RESULTS.md`** for the actual numbers.
+> **Framework vs. deployment.** This repo is the *reusable framework*: the native training engine, the autonomous agent organization, the retrieval memory, the build/telemetry/assessment tooling, and the governance protocols — everything you need to stand up your own lab. The research output a deployment produces — research results, decision history, trained checkpoints, and program corpus — is **deliberately not included here**; a fresh fork starts those empty and grows them as it runs.
 >
 > *Generated 2026-06-02. Every cited framework path was verified to exist in this repository; design/scale metrics were independently double-measured (zero mismatches). Read **§ Honest framing & caveats** before quoting any number — the framing matters.*
 
@@ -11,7 +11,7 @@
 1. **The Native Training Engine** (C17 / Metal / Swift)
 2. **The Autonomous Agent Organization & Governance**
 3. **Memory & Retrieval** — the 4-Layer Hybrid RAG System
-4. **Reference Deployment (the AGI Lab)** — Research Programs, Evaluation & Experiment Tracking *(brief; see `RESULTS.md`)*
+4. **Research Machinery** — Program Lifecycle, Evaluation & Experiment Tracking
 5. **Infrastructure, Tooling, Reproducibility & Self-Assessment**
 - **Framework Metrics** (verified)
 - **Navigation Index** — where to find what
@@ -28,7 +28,7 @@ The AGI Lab Framework is a **from-scratch autonomous AI-research laboratory stac
 3. **A 4-layer hybrid retrieval (RAG) memory** — knowledge graph (Personalized PageRank) + dense embeddings + BM25, fused via reciprocal-rank fusion and re-ranked with a cross-encoder, over a lab's own markdown corpus — served by a persistent warm-model daemon with graceful fallback. → `tools/retrieval/`, `tools/lab_memory.py`
 
 **Two missions, stated honestly** (this framing is baked into the framework's governance and is worth preserving when you fork it):
-- *Aspirational:* match or beat frontier models. In the author's reference deployment this was **formally established as unreachable at this scale** — the trainable models are tiny (≈48M–120M params) and score near random. That is documented as a result, not hidden (see `RESULTS.md`).
+- *Aspirational:* match or beat frontier models. This is **unreachable at this scale** — the trainable models are tiny (≈48M–120M params) and score near random. The framework treats that as a result to document, not hide.
 - *Real mission:* conduct **rigorous, reproducible small-scale research** — producing positive-result, null-result ("below-the-measurement-floor"), methodology, and reproducibility papers, with pre-registration and honest reporting. **This is where the framework is designed to deliver.**
 
 The engineering achievement the framework embodies is the **integrated system**: a complete, tested, reproducible research stack — engine + autonomous org + retrieval memory + eval harness + self-assessment — that fits and operates end-to-end on a laptop.
@@ -37,7 +37,7 @@ The engineering achievement the framework embodies is the **integrated system**:
 
 ## Framework metrics (verified 2026-06-02)
 
-*Figures below were measured twice by independent agents with zero mismatches. These describe the **framework's design and scale** — not the outcomes of any particular research run (those live in `RESULTS.md`). Read the final section's caveats before quoting.*
+*Figures below were measured twice by independent agents with zero mismatches. These describe the **framework's design and scale** — not the outcomes of any particular research run. Read the final section's caveats before quoting.*
 
 ### Scale & engineering
 | Metric | Value |
@@ -57,15 +57,14 @@ The engineering achievement the framework embodies is the **integrated system**:
 | Embeddings | all-MiniLM-L6-v2, **384-dim**, sqlite-vec |
 | Fusion / rerank | Reciprocal Rank Fusion (k=60) → cross-encoder `bge-reranker-v2-m3` |
 | Latency | **~0.85 s** BM25 cold full-process · **~32 ms** warm dense query (in-process) |
-| Reference-deployment corpus | 62,364 chunks / 497 source files; graph 1,277 nodes / 8,396 edges; index ~140 MB dense + ~99 MB BM25 + ~1.4 MB graph; metadata coverage 31.3% any-tag (up from 2.5%) — *these reflect one lab's corpus; see `RESULTS.md`* |
 
-> The corpus-size, graph, index-footprint and coverage numbers describe the author's reference deployment's indexed history, not the framework binary. A fresh fork builds its own index over its own corpus.
+> Corpus-size, graph, index-footprint and coverage numbers are properties of a deployment's indexed history, not the framework binary. A fresh fork builds its own index over its own corpus.
 
 ---
 
 ## 1. The Native Training Engine (C17 / Metal / Swift)
 
-The framework's centerpiece is a **from-scratch neural-network training and inference engine** written in C17, with GPU kernels in Apple Metal Shading Language and a thin Swift bridge to the Metal runtime. There is **no PyTorch, TensorFlow, JAX, or any ML framework** anywhere in the stack — tensors, autodiff-style backprop, optimizers, quantization, the tokenizer, and the GPU kernels are all hand-written. It lives under `src/` (about 19,600 lines across `core`, `model`, `training`, `metal`, `swift`, `eval`, `tests`) and is built by the top-level `Makefile`, which compiles `.metal` shaders via `xcrun -sdk macosx metal`/`metallib` into a `default.metallib`, compiles the Swift bridge with `swiftc`, and links everything into C binaries. It is real and working: the reference deployment trained checkpoints with it and produced benchmark scores from those checkpoints (see `RESULTS.md`).
+The framework's centerpiece is a **from-scratch neural-network training and inference engine** written in C17, with GPU kernels in Apple Metal Shading Language and a thin Swift bridge to the Metal runtime. There is **no PyTorch, TensorFlow, JAX, or any ML framework** anywhere in the stack — tensors, autodiff-style backprop, optimizers, quantization, the tokenizer, and the GPU kernels are all hand-written. It lives under `src/` (about 19,600 lines across `core`, `model`, `training`, `metal`, `swift`, `eval`, `tests`) and is built by the top-level `Makefile`, which compiles `.metal` shaders via `xcrun -sdk macosx metal`/`metallib` into a `default.metallib`, compiles the Swift bridge with `swiftc`, and links everything into C binaries. It is real and working: it trains checkpoints and produces benchmark scores from those checkpoints.
 
 The model it implements is **HSPA** ("Hierarchical Sparse Predictive Architecture"): a Mixture-of-Experts transformer. The aspirational full-scale config (`hspa_config_default()` in `src/model/hspa_config.c`) targets 16B total / 3.36B active params (32 layers, d_model 4096, 16 experts top-2, GQA with 32 query / 8 KV heads, INT4 weight storage), but everything actually trainable at this hardware scale runs much smaller — the preset factories `hspa_config_micro()` (~1M params), `_small()`, `_medium()`, `hspa_config_100m()` (119.6M), and `hspa_config_dense_50m_a()` (a 34.6M dense control), all defined in `src/training/ipc_train.c` (declared in `ipc_train.h`). The 16B figure is a design ceiling, not a trained artifact.
 
@@ -107,7 +106,7 @@ Five hand-written Metal compute kernels, all tuned for the M3 Pro (18 GPU cores,
 - **`quantized_matmul.metal`** — INT4 (block-size-32, 20-byte block: half scale + half zero + 16 packed bytes) × FP16 matmul, plus a batch-1 `vecmat_q4_fp16` inference hot-path variant.
 - **`rms_norm.metal`** (FP32-accumulate, FP16 I/O, SIMD reduction), **`softmax.metal`** (numerically stable two-pass online), and **`elementwise.metal`** (SwiGLU, add/mul/scale, GELU, and RoPE).
 
-**`src/swift/MetalBridge.swift`** (with C header `metal_bridge.h`) is the only Swift in the system: a `@_cdecl` C-callable bridge exposing `metal_init`, `metal_matmul`, `metal_is_ready`, `metal_cleanup`. It holds a singleton `MetalContext` (device, command queue, cached pipeline state), uses **unified memory (`MTLStorageModeShared`)** for zero-copy CPU↔GPU sharing, pre-warms the matmul pipeline at init, and is serial-locked for thread safety. The C side registers `metal_matmul` into `ops.c` via `op_set_gpu_matmul`. As noted above, the dispatch threshold is `INT64_MAX`, so this GPU path is **built and unit-tested but dormant** — the engine runs production training on Accelerate (CPU/AMX) today, with the Metal path as ready-to-enable acceleration. (Measured rationale: the custom Metal matmul ran 3–100× *slower* than Accelerate at every tested size on the reference hardware.)
+**`src/swift/MetalBridge.swift`** (with C header `metal_bridge.h`) is the only Swift in the system: a `@_cdecl` C-callable bridge exposing `metal_init`, `metal_matmul`, `metal_is_ready`, `metal_cleanup`. It holds a singleton `MetalContext` (device, command queue, cached pipeline state), uses **unified memory (`MTLStorageModeShared`)** for zero-copy CPU↔GPU sharing, pre-warms the matmul pipeline at init, and is serial-locked for thread safety. The C side registers `metal_matmul` into `ops.c` via `op_set_gpu_matmul`. As noted above, the dispatch threshold is `INT64_MAX`, so this GPU path is **built and unit-tested but dormant** — the engine runs production training on Accelerate (CPU/AMX) today, with the Metal path as ready-to-enable acceleration. (Measured rationale: the custom Metal matmul ran 3–100× *slower* than Accelerate at every tested size on the M3 Pro.)
 
 ### End-to-end flow
 
@@ -194,7 +193,7 @@ Two independent mechanisms guard against an agent claiming work it never did.
 
 **Cross-tier verifier pairs** (`data/agents/_shared/verifier_pairs.json`): named high-stakes producer roles are checked by a *different* model instance acting as verifier, with a `max_iterations` retry budget. Examples: `pi` → verified by `lab_architect` (deliberately a sonnet-tier cross-check to catch over-confident opus claims, and the enforcer of the calibration-fields requirement); `paper_writer` → `code_reviewer` (a separate opus instance checks technical claims independent of authorship); `code_reviewer` → `evaluator`; `experimental_methodologist` → `scientific_reviewer`; `mechanism_extractor` → `red_team`; `math_theorist` → `statistical_reviewer`. A `VERIFY_FAIL` re-dispatches the producer with the critique; exhausting iterations escalates with reason `VERIFIER_REJECTION_LOOP`.
 
-**Signature-forgery detection** (`tools/verify_signatures.py`): every formal attestation (`**<role> ✓**`, "approved by `<role>`", etc.) in program deliverables must have a corresponding dated file under that role's `episodic/` directory. The canonical signature format embeds the episodic path so verification is mechanical. Three redundant detectors run it: the runner's pre-checkpoint hook (converts the exit reason to `SIGNATURE_FORGERY_UNADDRESSED` on mismatch), the evaluator's mandatory per-phase check (AUTO-FAIL, no pass-with-flags), and the `lab_architect` retro (repeat-offender pattern detection). *(The tool was added after a real incident in which a Director forged five PI signatures without dispatching the PI agent — the structural fix that became a methodology paper in the reference deployment.)*
+**Signature-forgery detection** (`tools/verify_signatures.py`): every formal attestation (`**<role> ✓**`, "approved by `<role>`", etc.) in program deliverables must have a corresponding dated file under that role's `episodic/` directory. The canonical signature format embeds the episodic path so verification is mechanical. Three redundant detectors run it: the runner's pre-checkpoint hook (converts the exit reason to `SIGNATURE_FORGERY_UNADDRESSED` on mismatch), the evaluator's mandatory per-phase check (AUTO-FAIL, no pass-with-flags), and the `lab_architect` retro (repeat-offender pattern detection). *(The tool was added after a real incident in which a Director forged five PI signatures without dispatching the PI agent — the structural fix for that failure mode.)*
 
 The **self-escalation contract** (`data/agents/_shared/self_escalation_contract.md`) is the third leg: any agent that judges its task exceeds its model tier must return `status: BLOCKED` with a `suggest_model` rather than produce shallow output — making self-assessment a structured, dispatcher-actionable signal. (`data/agents/_shared/agent_contracts.json` adds formal per-role resource/success contracts; v1 enforces only the Director's `session_exit.md` checks, the rest are stubbed for v2.)
 
@@ -229,18 +228,18 @@ The end-to-end flow per session: runner writes the brief → spawns the Director
 - **Verification / anti-forgery** → `data/agents/_shared/verifier_pairs.json`, `tools/verify_signatures.py`, `tools/calibration_logger.py` + `tools/calibration_rollup.py` + `tools/calibration_pending.py` (calibration loop), spec at `docs/superpowers/specs/2026-05-04-pi-self-correction.md`.
 - **Runner / session lifecycle** → `run_agi_lab.sh` (identity assertion, watchdog `watchdog_cli_hang`, main loop, retrieval server start/stop), `tools/stream_formatter.py`, `tools/post_director.py`, `tools/measure_startup_read.py`.
 - **Work queue / dispatch** → `tools/work_queue.py`, `tools/queue_scanner.py`, `tools/brief_assembler.py`, `tools/dispatch_helper.py`, `data/agents/_shared/work_queue_handlers.md`, `data/agents/_shared/session_exit_schema.md`, spec at `docs/superpowers/specs/2026-05-04-work-queue.md`.
-- **Governance protocols, mission, decision log, per-program memory** → *(produced and held in a live deployment under `programs/` and `data/memories/`; not in this framework repo — see `RESULTS.md` and §4).*
+- **Governance protocols, mission, decision log, per-program memory** → *(produced and held in a live deployment under `programs/` and `data/memories/`; not in this framework repo — see §4 for the machinery that produces them).*
 
 ## 3. Memory & Retrieval — the 4-Layer Hybrid RAG System
 
 The framework's long-term memory is not a vector store bolted onto an LLM — it is a four-layer hybrid retrieval-augmented-generation (RAG) system built from scratch over a lab's *own* markdown corpus. Every decision log, program memo, agent procedural/semantic file, and engineering review a lab writes is ingested, chunked, indexed four different ways, and served to agents at query time. The design philosophy, documented in `docs/retrieval/architecture.md`, is deliberately *non*-fancy: no LLM entity extraction, no community detection, no Neo4j — every layer is a small, auditable, dependency-light Python module, because the token vocabulary of this kind of lab (decision IDs like `D-420`, carry-forward tokens like `P-D417-...`, program names) is *canonical and regex-extractable*, so an LLM is not needed to build the graph.
 
-The orchestrator is `tools/retrieval/search.py`; the four layers live as sibling modules under `tools/retrieval/`. *(Index/corpus statistics below — chunk/node/edge counts, footprints — describe the author's reference deployment's indexed history; a fresh fork builds its own. See `RESULTS.md`.)*
+The orchestrator is `tools/retrieval/search.py`; the four layers live as sibling modules under `tools/retrieval/`. *(Any index/corpus statistics — chunk/node/edge counts, footprints — are properties of a deployment's indexed history; a fresh fork builds its own.)*
 
 ### The four layers (L0–L3) plus rerank (L4)
 
 **L0 — Knowledge graph (`tools/retrieval/graph.py`).**
-A persistent SQLite graph of canonical lab tokens. Node types: `decision`, `file`, `carry_forward`, `program`, `phase`, `role`. Edge types actually emitted by `build_graph_from_corpus`: `cites` (a defined decision header references a decision *not* defined in the same file), `raises` (a decision header co-occurs with a carry-forward token), `in_program`, `in_file`. The graph is built by regex-walking the corpus with token extractors (`_DECISION_RE`, `_CARRY_FORWARD_RE`, `_PROGRAM_RE`, `_PHASE_RE`); roles come from a vocabulary loaded out of `data/agents/agents.json`. Builds are idempotent (`INSERT OR IGNORE` upserts) and contain a symlink-containment guard that skips any `.md` resolving outside the repo. At query time, seed tokens are extracted from the query and **Personalized PageRank** (`networkx.pagerank`, α=0.85, with a tol=1e-6 → 1e-4 convergence fallback) is run from those seeds; the top-20 related nodes are returned. The graph layer does **not** re-rank results — it only *annotates* fused chunks with a `graph_boost` flag when a chunk's `file:` node is in the PPR-related set, keeping RRF authoritative. The module declares `RESERVED_EDGE_TYPES` (`precedes`, `resolves`, `dispatched_by`, `in_phase`) that are documented but **not yet emitted** — explicitly flagged as a roadmap, not a live capability. (Reference-deployment live stats: 1,277 nodes / 8,396 edges.)
+A persistent SQLite graph of canonical lab tokens. Node types: `decision`, `file`, `carry_forward`, `program`, `phase`, `role`. Edge types actually emitted by `build_graph_from_corpus`: `cites` (a defined decision header references a decision *not* defined in the same file), `raises` (a decision header co-occurs with a carry-forward token), `in_program`, `in_file`. The graph is built by regex-walking the corpus with token extractors (`_DECISION_RE`, `_CARRY_FORWARD_RE`, `_PROGRAM_RE`, `_PHASE_RE`); roles come from a vocabulary loaded out of `data/agents/agents.json`. Builds are idempotent (`INSERT OR IGNORE` upserts) and contain a symlink-containment guard that skips any `.md` resolving outside the repo. At query time, seed tokens are extracted from the query and **Personalized PageRank** (`networkx.pagerank`, α=0.85, with a tol=1e-6 → 1e-4 convergence fallback) is run from those seeds; the top-20 related nodes are returned. The graph layer does **not** re-rank results — it only *annotates* fused chunks with a `graph_boost` flag when a chunk's `file:` node is in the PPR-related set, keeping RRF authoritative. The module declares `RESERVED_EDGE_TYPES` (`precedes`, `resolves`, `dispatched_by`, `in_phase`) that are documented but **not yet emitted** — explicitly flagged as a roadmap, not a live capability.
 
 **L1 — Dense / vector (`tools/lab_memory.py`).**
 The semantic backbone, originally written to replace a cloud "goodmem" service with a fully-local stack. `LabMemory` chunks markdown (~800-char chunks, 100-char overlap, paragraph-boundary-preferring), embeds with **sentence-transformers `all-MiniLM-L6-v2` (384-dim, normalized)**, and stores vectors in a **`sqlite-vec`** virtual table (`memories_vec USING vec0(embedding float[384])`) alongside a metadata `memories` table. Search is cosine-distance KNN (`v.embedding MATCH ? AND k = ?`) with optional exact-match metadata filters and a 4× over-fetch-then-trim. It guards against being run with system Python (sqlite-vec lives only in `.venv/`).
@@ -266,7 +265,7 @@ The client, `tools/retrieval/client.py`, is intentionally lightweight (no server
 
 ### Metadata-scoped retrieval
 
-`tools/retrieval/metadata.py` derives the single-valued `{program_id, role, phase, deliverable_type}` columns from `source_path` + whole-file text, enabling `--program/--role/--phase` exact-match filters across all layers. It reuses the graph's extractors so vocabulary agrees, maps full program tokens to short IDs via an explicit `_PROGRAM_DIR_TO_ID` table (avoiding a naïve `program_(\d+)` regex that would collide `program_3` with `program_3_brainstorm`), and tags a program *only* when whole-file text names exactly one whitelisted program — conservative by design. `tools/retrieval/backfill_metadata.py` re-derives metadata file-level for existing rows (dry-run by default, `--apply` to write; metadata-only UPDATEs that never touch IDs/vectors). In the reference deployment it raised coverage from ~2.5% to a verified **31.3% any-tag** — partial coverage by intent, since most cross-program memory content gets no single tag. `LabMemory.ingest` auto-derives this metadata for new files when the caller omits it.
+`tools/retrieval/metadata.py` derives the single-valued `{program_id, role, phase, deliverable_type}` columns from `source_path` + whole-file text, enabling `--program/--role/--phase` exact-match filters across all layers. It reuses the graph's extractors so vocabulary agrees, maps full program tokens to short IDs via an explicit `_PROGRAM_DIR_TO_ID` table (avoiding a naïve `program_(\d+)` regex that would collide `program_3` with `program_3_brainstorm`), and tags a program *only* when whole-file text names exactly one whitelisted program — conservative by design. `tools/retrieval/backfill_metadata.py` re-derives metadata file-level for existing rows (dry-run by default, `--apply` to write; metadata-only UPDATEs that never touch IDs/vectors). Coverage is partial by intent, since most cross-program memory content gets no single tag. `LabMemory.ingest` auto-derives this metadata for new files when the caller omits it.
 
 ### Reproducibility
 
@@ -286,22 +285,20 @@ Embedding/reranker weights are pinned by HF commit SHA in the repo-root `model_r
 - **Build/upgrade plan:** `docs/superpowers/plans/2026-05-20-memory-retrieval-upgrade.md` (tasks T0.1–T5.3)
 - **Live SQLite indexes** (`tools/lab_memory.db`, `tools/lab_graph.db`, `tools/lab_bm25.json`) → *built at runtime over your corpus; not shipped in this framework repo.*
 
-## 4. Reference Deployment (the AGI Lab) — Research Programs, Evaluation & Experiment Tracking
+## 4. Research Machinery — Program Lifecycle, Evaluation & Experiment Tracking
 
-> **This section is intentionally brief.** It describes the *framework's research machinery* (the program lifecycle, the evaluation harnesses, the experiment-tracking schema) — all of which ship in this repo — and then summarizes what the author's reference deployment, **the AGI Lab**, actually produced with it. The full results, scores, program write-ups, decision history, and paper drafts are research output that is **not included in this framework repo**; they live in the sibling **`RESULTS.md`**.
+> **This section describes the *framework's research machinery*** — the program lifecycle, the evaluation harnesses, and the experiment-tracking schema — all of which ship in this repo. The results, scores, program write-ups, decision history, and paper drafts a deployment produces with this machinery are research output that is **not included in this framework repo.**
 
 ### 4.1 The two missions (framework design)
 
 The framework is built around an explicit two-tier mission that a deployment defines in its own `data/memories/mission.md` (a runtime file):
 
-- **Aspirational Mission:** beat a named frontier model on a fixed set of standardized benchmarks (e.g. MMLU, HumanEval, ARC-AGI, GSM8K/MATH, HellaSwag, TruthfulQA, WinoGrande, BigBench-Hard) on 18 GB with no cloud — revised *upward only* as new frontier models ship, kept fixed as a *forcing function*, and never expected to be reached by any single program. In the reference deployment this was formally established as **not achievable at this scale** (Program 1).
+- **Aspirational Mission:** beat a named frontier model on a fixed set of standardized benchmarks (e.g. MMLU, HumanEval, ARC-AGI, GSM8K/MATH, HellaSwag, TruthfulQA, WinoGrande, BigBench-Hard) on 18 GB with no cloud — revised *upward only* as new frontier models ship, kept fixed as a *forcing function*, and never expected to be reached by any single program. It is **not achievable at this scale.**
 - **Real Mission:** "produce rigorous research at any scale that fits on 18 GB hardware." The lab is explicitly unbiased between positive and negative outcomes — pre-registered decision rules decide which output type an artifact becomes. The four legitimate output types: (1) **positive-result** architecture/training/efficiency papers, (2) **methodology/governance** contributions (the lab itself as research artifact), (3) **reproducibility** reports, and (4) **envelope / negative-result** papers when evidence lands negative. Scale is hardware-bounded (≤100M trained from scratch, up to ~9B with 4-/2-bit quantization for inference), not arbitrarily capped.
 
 ### 4.2 Research programs (the lifecycle, framework-side)
 
 Programs are long-lived, pre-registered research efforts. In a deployment they live under `programs/<slug>/`, each with a `question.md` (locked research question with a SHA-1 "binding blob hash" affixed at the unanimous lock gate so the question can't be silently restated), a `program_open_memo.md`, phase deliverables, and — on close — a `closure_memo.md`. The framework supplies the *protocol and tooling* for this lifecycle (phase gates §2.3, pre-reg discipline, factorial orchestrators §5); the **program directories themselves are research output and are not in this repo.**
-
-**Reference deployment summary** (full detail in `RESULTS.md`): 2 programs taken to formal closure (Program 1 — an Opus-on-18GB feasibility *envelope/negative-result* paper; Program 2 — a pre-registered compute-matched dense-vs-MoE comparison that yielded a *null result* "below the measurement floor"), with Program 3 (alt-gradient methods × QAT at 100M) active. Plus two methodology/governance tracks (structural anti-forgery; tiered memory). Output: 4 markdown paper drafts + 3 typeset IEEE PDFs, including a null-result envelope paper.
 
 ### 4.3 Evaluation harnesses (in this repo)
 
@@ -314,7 +311,7 @@ Benchmark scoring is done by stdlib-only Python drivers in `tools/` that each do
 
 Each driver shells out via `subprocess` to a compiled C scoring binary (`build/eval_model`, produced by `make eval` from `src/eval/eval_model.c`) given a checkpoint + tokenizer, and writes both a JSON result and a human-readable scorecard. Scoring is per-choice-logprob argmax. `tools/eval_harness_p11.py` is the more rigorous, pre-registered harness: it iterates factorial cells × benchmarks through a direct `lm-eval`-style adapter (`tools/hspa_lm_eval_adapter.py`), pins a specific harness commit hash that must not change, applies pre-reg-mandated left-truncation for over-length items, and uses `acc` (not `acc_norm`) for WinoGrande per a co-signed amendment.
 
-**What the numbers mean.** For ~48–119M-parameter from-scratch models on a laptop, standard-benchmark scores at or near random are the **expected and documented outcome**, not a defect — exactly the point a feasibility program establishes formally. The reference deployment's actual scores and their honest framing are in `RESULTS.md` (do not quote benchmark numbers as model "capability").
+**What the numbers mean.** For ~48–119M-parameter from-scratch models on a laptop, standard-benchmark scores at or near random are the **expected and documented outcome**, not a defect — exactly the point a feasibility program establishes formally. Do not quote benchmark numbers as model "capability."
 
 ### 4.4 Experiment tracking (schema in this repo, data in the deployment)
 
@@ -324,7 +321,7 @@ Each driver shells out via `subprocess` to a compiled C scoring binary (`build/e
 - **Eval harnesses (in this repo):** `tools/eval_mmlu.py`, `tools/eval_gsm8k.py`, `tools/eval_hellaswag.py`, `tools/eval_winogrande.py`, `tools/eval_harness_p11.py`, `tools/hspa_lm_eval_adapter.py`; C scoring source `src/eval/eval_model.c` (binary built to `build/eval_model` by `make eval`).
 - **Experiment-store schema (in this repo):** `tools/experiments.py`.
 - **Factorial orchestrators (in this repo):** `tools/run_phase3_factorial.py`, `tools/run_long.py`.
-- **All actual results, scores, program write-ups, paper drafts, decision history** → **`RESULTS.md`** (sibling doc) *(the `programs/`, `data/memories/`, `data/eval/`, `data/experiments.db` artifacts are research output produced in a live deployment; not in this framework repo).*
+- **Actual results, scores, program write-ups, paper drafts, decision history** → *(research output produced in a live deployment under `programs/`, `data/memories/`, `data/eval/`, `data/experiments.db`; not in this framework repo).*
 
 ## 5. Infrastructure, Tooling, Reproducibility & Self-Assessment
 
@@ -350,7 +347,7 @@ Key design decisions and targets:
 
 The lab emits append-only JSONL telemetry during operation and periodically "rolls it up" into human-readable markdown + machine JSON. Each rollup module follows the same pattern: module-level `REPO` (monkeypatchable for tests), idempotent overwrite of its output file, graceful no-op when its source is absent. *(The JSONL telemetry and rollup outputs are runtime data and are not shipped here; the tools are.)*
 
-- **Cost — `tools/cost_rollup.py`.** Reads Claude Code's own session JSONL logs from `~/.claude/projects/…` and joins them with lab telemetry. It carries a hard-coded `PRICING` table ($/M tokens per model, with cache-creation priced at 1.25× input and cache-read at 0.10×) and computes weekly totals, a per-model and per-role breakdown, `wastage_events` (silent-death recoveries, failed claims, escalations, verifier failures, holding loops), and an outlier-session list (sessions >3.5× MAD above median cost). Spec: `docs/superpowers/specs/2026-05-13-cost-rollup.md`. (Reference-deployment rollup: $3,293 over 134 director dispatches ≈ $24.58/session — see `RESULTS.md`.)
+- **Cost — `tools/cost_rollup.py`.** Reads Claude Code's own session JSONL logs from `~/.claude/projects/…` and joins them with lab telemetry. It carries a hard-coded `PRICING` table ($/M tokens per model, with cache-creation priced at 1.25× input and cache-read at 0.10×) and computes weekly totals, a per-model and per-role breakdown, `wastage_events` (silent-death recoveries, failed claims, escalations, verifier failures, holding loops), and an outlier-session list (sessions >3.5× MAD above median cost). Spec: `docs/superpowers/specs/2026-05-13-cost-rollup.md`.
 - **Calibration — three cooperating modules.** `tools/calibration_logger.py` exposes `log_calibration(decision_id, claim, confidence, reasoning, …)` (appends a record with `outcome: null`, validating confidence ∈ [0,1]) and `score_calibration(decision_id, outcome)` (idempotently fills the outcome in-place). `tools/calibration_rollup.py` buckets scored claims into 5 confidence bands and computes actual hit rate, midpoint error, and an over/under-confidence flag when |error| > 15% with ≥5 samples. `tools/calibration_pending.py` is a read-only nudge surfacing claims still at `outcome=null` (oldest-first) so the PI/Director closes the learning loop.
 - **Dispatch — `tools/dispatch_rollup.py`.** From `dispatch_telemetry.jsonl`, per-role total dispatches, escalation rate, and verifier-fail rate, flagging roles over thresholds (escalation >30% → suggest tier upgrade; verifier-fail >20% → suggest model change). Feeds tuning of default model tiers in `data/agents/agents.json`.
 - **Queue — `tools/queue_rollup.py`.** From `queue_telemetry.jsonl`, per-item-type lifetime counts (enqueued/completed/failed) and median claim→complete latency, flagging types with >20% fail rate. Pulls live pending/claimed counts from `tools/work_queue.summary()` when importable.
@@ -378,7 +375,7 @@ A read-only Python package that recomputes "how good is the lab?" from the lab's
 4. **governance** (`governance.py`) — calibration mean-absolute-error (binned |confidence − accuracy|, weighted by bin size) over *resolved* claims, plus ORG_ADAPTATION flag count and evaluator verdict. Rubric: MAE ≤0.1 *Strong*, ≤0.2 *Solid*, else *Developing*; no resolved outcomes → *N/A*.
 5. **rag** (`rag.py`) — index health from the live `tools/lab_memory.db` (chunk count + per-column metadata coverage), with retrieval quality (recall@k/MRR/nDCG@k) as an **opt-in heavy path** (`--rag-quality` → `compute_retrieval_quality()`, which loads the real embedder/reranker and runs a deterministic known-item eval).
 
-The reference deployment's actual scorecard (research **Solid** · benchmarks **Developing** · ops **Solid** · governance **N/A** · rag **Solid**) is in `RESULTS.md`. The whole suite is reflexive (it assesses the lab it lives in) and leans on hard, source-grounded metrics to avoid self-congratulation.
+The whole suite is reflexive (it assesses the lab it lives in) and leans on hard, source-grounded metrics to avoid self-congratulation.
 
 ### Where to find more
 - **Build system:** `Makefile` (all targets, sanitizer flags, source/test discovery, launcher comments); `tests/quarantine/README.md` (quarantine policy); `run_agi_lab.sh` (lab entrypoint wrapped by `make lab-start`).
@@ -393,18 +390,18 @@ The reference deployment's actual scorecard (research **Solid** · benchmarks **
 
 ## Navigation Index — where to find what
 
-Each section above ends with a detailed **"Where to find more."** This is the top-level map. *(F) = ships in this framework repo · (D) = produced in a live deployment, see `RESULTS.md`.*
+Each section above ends with a detailed **"Where to find more."** This is the top-level map. *(F) = ships in this framework repo · (D) = produced in a live deployment; not shipped.*
 
 | If you want to understand… | Go to | Primary code / docs |
 |---|---|---|
 | The neural-net engine, model, gradients, kernels | §1 | (F) `src/core`, `src/model`, `src/training`, `src/metal`, `src/swift`, `src/eval`, `src/tests` |
 | How the autonomous org runs / governs itself | §2 | (F) `data/agents/`, `run_agi_lab.sh`, `tools/{work_queue,queue_scanner,dispatch_helper,brief_assembler,post_director,verify_signatures}.py` |
 | The retrieval / RAG memory | §3 | (F) `tools/retrieval/`, `tools/lab_memory.py`; (D) the built `lab_memory.db`/`lab_graph.db`/`lab_bm25.json` indexes |
-| The research machinery (lifecycle, harnesses, schema) | §4 | (F) `tools/eval_*.py`, `tools/hspa_lm_eval_adapter.py`, `tools/experiments.py`, `tools/run_phase3_factorial.py`; (D) `programs/`, `data/eval/`, `data/experiments.db` → `RESULTS.md` |
+| The research machinery (lifecycle, harnesses, schema) | §4 | (F) `tools/eval_*.py`, `tools/hspa_lm_eval_adapter.py`, `tools/experiments.py`, `tools/run_phase3_factorial.py`; (D) `programs/`, `data/eval/`, `data/experiments.db` produced in a live deployment; not shipped |
 | Build, telemetry, reproducibility, self-assessment | §5 | (F) `Makefile`, `tools/lab_assessment/`, `tools/{cost,dispatch,queue}_rollup.py`, `model_revisions.json`; (D) `data/infra/`, `data/engineering/` |
-| Mission, governance protocols, decision history | §2/§4 | (F) protocol + tooling here; (D) `data/memories/` + `programs/` are runtime memory → `RESULTS.md` |
+| Mission, governance protocols, decision history | §2/§4 | (F) protocol + tooling here; (D) `data/memories/` + `programs/` are runtime memory; not shipped |
 | Design specs (the "why") | — | (F) `docs/superpowers/specs/*.md`, `docs/superpowers/plans/*.md`, `docs/retrieval/architecture.md` |
-| The actual research results, scores, papers | §4 | (D) **`RESULTS.md`** (sibling doc) |
+| The actual research results, scores, papers | §4 | (D) produced in a live deployment; not shipped |
 | Live framework self-assessment, regenerated | §5.4 | (F) `make lab-report` → `lab_assessment.{md,json}` |
 
 ---
@@ -413,13 +410,12 @@ Each section above ends with a detailed **"Where to find more."** This is the to
 
 This framework's culture is anti-forgery and honest reporting; keep the numbers defensible:
 
-- **Framework vs. deployment.** This repo is the *reusable framework*. Anything describing a *specific run's outcomes* (benchmark scores, $/session, program verdicts, corpus/index sizes, metadata coverage) is the author's **reference deployment** and lives in `RESULTS.md` — not a property of the framework binary.
+- **Framework vs. deployment.** This repo is the *reusable framework*. Anything describing a *specific run's outcomes* (benchmark scores, $/session, program verdicts, corpus/index sizes, metadata coverage) is a property of a deployment, not of the framework binary, and is not shipped here.
 - **"~74K LOC" is raw `wc -l`** (includes blanks/comments) — say *"~74K lines,"* not "SLOC." Verified composition: native engine ~19,600 (C 15,573 · headers 2,740 · Metal 1,047 · Swift 233); Python tracked non-test 18,991.
 - **Tests: say "828 Python test functions + 269 C (Unity) cases,"** not "passing" — these are counts of test functions/cases as collected, not a clean end-to-end run claim.
-- **Benchmark scores are at/near random** on tiny from-scratch models — frame as a *rigorous small-scale research process and a documented null result*, **never** as model capability. "Beating Opus" was formally proven unreachable at this scale and reported as such (reference deployment, Program 1; see `RESULTS.md`).
-- **"2 programs closed"** of 8 program directories (in the reference deployment) — the rest are methodology tracks, a retrospective, and brainstorm scaffolding. Say *"2 programs taken to formal closure."*
+- **Benchmark scores are at/near random** on tiny from-scratch models — frame as a *rigorous small-scale research process and a documented null result*, **never** as model capability. "Beating Opus" is unreachable at this scale and is meant to be reported as such.
 - **The Metal GPU matmul path is built + unit-tested but dormant** (dispatch threshold disabled) — production training runs on Apple Accelerate (CPU/AMX), because the custom Metal kernel measured 3–100× *slower*. Say the GPU path is *"implemented and ready-to-enable,"* not "in production."
 - **31 agent roles** (active) + 18 retired; **64 Python tools**; **283 commits over ~7.1 weeks** (2026-04-13 → 2026-06-02).
-- **This framework repo deliberately excludes research output** — `programs/`, `data/memories/`, `data/experiments.db`, `data/eval/`, `data/infra/`, `data/engineering/`, checkpoints, and per-role `semantic.md`/`episodic/` history. A fresh fork starts those empty and grows them as it runs. The corresponding artifacts and results are summarized in the sibling `RESULTS.md`.
+- **This framework repo deliberately excludes research output** — `programs/`, `data/memories/`, `data/experiments.db`, `data/eval/`, `data/infra/`, `data/engineering/`, checkpoints, and per-role `semantic.md`/`episodic/` history. A fresh fork starts those empty and grows them as it runs.
 
 *To regenerate the framework's live self-assessment at any time: `make lab-report` (sources tied to research data report `"unavailable"` in a fresh fork — by design).*

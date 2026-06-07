@@ -40,7 +40,7 @@ programs/program_0_retrospective/open_hypotheses.md                 (new)
 programs/program_0_retrospective/infrastructure.md                  (new)
 programs/program_0_retrospective/data_assets.md                     (new)
 programs/program_0_retrospective/bibliography_inherited.md          (new)
-programs/program_1_opus47_on_18gb/question.md                       (new, Phase 1 output)
+programs/program_1_example/question.md                       (new, Phase 1 output)
 legacy/cycles_1_31/                                                 (new dir, contents moved)
 ```
 
@@ -142,7 +142,7 @@ Expected: commit success.
 - Create: `programs/` (new dir)
 - Create: `programs/archive/` (new dir)
 - Create: `programs/program_0_retrospective/` (new dir)
-- Create: `programs/program_1_opus47_on_18gb/` (new dir)
+- Create: `programs/program_1_example/` (new dir)
 - Create: `legacy/cycles_1_31/` (new dir + subdirs)
 
 - [ ] **Step 1: Create programs/ tree**
@@ -152,8 +152,8 @@ Run:
 cd <repo>
 mkdir -p programs/archive
 mkdir -p programs/program_0_retrospective
-mkdir -p programs/program_1_opus47_on_18gb/results_raw
-mkdir -p programs/program_1_opus47_on_18gb/figures
+mkdir -p programs/program_1_example/results_raw
+mkdir -p programs/program_1_example/figures
 ```
 
 Expected: no errors. Verify with `ls programs/`.
@@ -180,7 +180,7 @@ Write `<repo>/programs/portfolio.md`:
 
 ## Active
 
-- **program_1_opus47_on_18gb** — Status: PENDING (opens after Stage 4 of overhaul)
+- **program_1_example** — Status: PENDING (opens after Stage 4 of overhaul)
   - Question: Can we fit an Opus-4.7-equivalent model on an 18GB M3 Pro laptop? What is the feasibility envelope given current techniques + 18GB unified memory + no cloud compute?
   - Started: TBD
   - Current phase: Pending (awaits unanimous PI+Director open)
@@ -3289,11 +3289,11 @@ EOF
 ### Task 25: PI + Director unanimous agreement to open Program 1
 
 **Files:**
-- Create: `programs/program_1_opus47_on_18gb/program_open_memo.md`
+- Create: `programs/program_1_example/program_open_memo.md`
 
 - [ ] **Step 1: Write the program_open_memo**
 
-This memo documents the PI + Director unanimous decision to open Program 1. Write `<repo>/programs/program_1_opus47_on_18gb/program_open_memo.md`:
+This memo documents the PI + Director unanimous decision to open Program 1. Write `<repo>/programs/program_1_example/program_open_memo.md`:
 
 ```markdown
 # Program 1 — Open Memo
@@ -3377,7 +3377,7 @@ Paper at P15 that either lays out the feasibility envelope OR reports negative r
 
 ```bash
 cd <repo>
-git add programs/program_1_opus47_on_18gb/program_open_memo.md data/decisions_recent.md
+git add programs/program_1_example/program_open_memo.md data/decisions_recent.md
 git commit -m "$(cat <<'EOF'
 feat(program_1): open on mission question
 
@@ -3402,7 +3402,7 @@ Overwrite `<repo>/data/state.md`:
 ```markdown
 # AGI Lab — Current State
 
-## Current Program: program_1_opus47_on_18gb
+## Current Program: program_1_example
 
 ## Current Phase: P1 — Question Formation
 
@@ -3424,7 +3424,7 @@ Per `data/procedures.md` (Phase 1):
 - [ ] 1g — sub-question decomposition (what sub-questions does Program 1 actually answer?)
 - [ ] 1h — program scoping (5-15 sessions, role roster)
 - [ ] 1i — PI + Director unanimous lock
-- [ ] 1j — publish programs/program_1_opus47_on_18gb/question.md
+- [ ] 1j — publish programs/program_1_example/question.md
 
 ## Active Roster
 
@@ -3480,7 +3480,7 @@ git add data/state.md
 git commit -m "$(cat <<'EOF'
 feat(state): Program 1 Phase 1 active
 
-Lab transition complete. Current: program_1_opus47_on_18gb, phase P1 (question formation). 30 seed roles active. Infrastructure validated via Program 0.
+Lab transition complete. Current: program_1_example, phase P1 (question formation). 30 seed roles active. Infrastructure validated via Program 0.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
 EOF
@@ -3489,7 +3489,7 @@ EOF
 
 - [ ] **Step 5: Hand off to autonomous lab**
 
-The lab is now running autonomously under the new program-based structure. Program 1 Phase 1 will produce `programs/program_1_opus47_on_18gb/question.md`. Phase 1's evaluator runs at phase close. PI + Director unanimous gate opens Phase 2 (literature saturation).
+The lab is now running autonomously under the new program-based structure. Program 1 Phase 1 will produce `programs/program_1_example/question.md`. Phase 1's evaluator runs at phase close. PI + Director unanimous gate opens Phase 2 (literature saturation).
 
 Monitor via:
 ```bash

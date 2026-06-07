@@ -207,14 +207,14 @@ git commit -m "feat(runner): redispatch Director on schema violation with correc
 ### Task L2.1: artifact_schema.yaml format + sample for program_2 P11
 
 **Files:**
-- Create: `programs/program_2_dense_vs_moe_sub100m/artifact_schema.yaml`
+- Create: `programs/program_2_example/artifact_schema.yaml`
 - Create: `docs/superpowers/notes/artifact-schema-format.md` (operator reference)
 
 - [ ] **Step 1: Define the schema format (operator-facing doc)**
 
 ```yaml
 # artifact_schema.yaml format v1.0
-program: program_2_dense_vs_moe_sub100m
+program: program_2_example
 current_phase: P11
 phases:
   - id: P11

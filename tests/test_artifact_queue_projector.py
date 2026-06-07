@@ -141,12 +141,12 @@ def test_project_real_program_2_emits_apparatus_build(tmp_path, monkeypatch):
     from tools.artifact_queue_projector import project_artifacts
 
     # Copy the real schema into tmp_path without other artifacts
-    src = REPO / "programs/program_2_dense_vs_moe_sub100m/artifact_schema.yaml"
-    prog_dir = tmp_path / "programs/program_2_dense_vs_moe_sub100m"
+    src = REPO / "programs/program_2_example/artifact_schema.yaml"
+    prog_dir = tmp_path / "programs/program_2_example"
     prog_dir.mkdir(parents=True)
     shutil.copy(src, prog_dir / "artifact_schema.yaml")
 
-    items = project_artifacts("program_2_dense_vs_moe_sub100m", repo_root=tmp_path)
+    items = project_artifacts("program_2_example", repo_root=tmp_path)
     # Should emit the apparatus_methodology_compliant artifact (no prereqs)
     assert len(items) == 1
     assert items[0]["payload"]["_artifact_id"] == "P11.apparatus_methodology_compliant"

@@ -33,14 +33,14 @@ def _make_db(tmp_path):
     conn.executescript(_SCHEMA)
     rows = [
         # program_2 file -> should get program_id='program_2'
-        ("programs/program_2_dense_vs_moe_sub100m/a.md",
+        ("programs/program_2_example/a.md",
          "dense vs moe sub-100m baseline notes", 1),
         # a multi-program memory FILE: two chunks that TOGETHER name two
         # programs -> file-level guard -> program_id='' on BOTH rows.
         ("data/memories/log.md",
-         "we worked on program_1_opus47_on_18gb today", 2),
+         "we worked on program_1_example today", 2),
         ("data/memories/log.md",
-         "and also pushed program_2_dense_vs_moe_sub100m forward", 2),
+         "and also pushed program_2_example forward", 2),
         # director agent memory -> role='director'
         ("data/agents/director/semantic.md",
          "director standing orders and routing policy", 3),
@@ -82,7 +82,7 @@ def test_backfill_apply_file_level(tmp_path):
         by_path.setdefault(sp, []).append((prog, role))
 
     # program_2 file row got program_id='program_2'.
-    p2 = by_path["programs/program_2_dense_vs_moe_sub100m/a.md"]
+    p2 = by_path["programs/program_2_example/a.md"]
     assert all(prog == "program_2" for prog, _role in p2)
 
     # multi-program memory file rows got program_id='' (file-level guard).

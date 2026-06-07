@@ -24,7 +24,7 @@ phases:
 
 ## Field semantics
 
-- **program**: identifier matching the directory name (e.g., `program_2_dense_vs_moe_sub100m`)
+- **program**: identifier matching the directory name (e.g., `program_2_example`)
 - **current_phase**: the phase the projector should consider "active." Artifacts in other phases are ignored unless the operator updates this field.
 - **artifact.id**: unique within the schema. Used as dedup key by `compute_id()` so re-projection produces the same queue-item ID.
 - **artifact.path**: relative to repo root. Supports `{program}` interpolation. Existence check is `Path(path.format(program=program)).exists()`.

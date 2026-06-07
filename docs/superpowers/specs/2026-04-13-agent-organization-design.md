@@ -880,7 +880,7 @@ while true; do
 
     # Launch Claude Code with the resume prompt
     claude --print "$(cat <<'PROMPT'
-You are the AGI Lab Director session. Read the following files in order:
+You are the lab Director session. Read the following files in order:
 
 1. data/session_state.md — where the org left off
 2. data/roadmap.md — current priorities

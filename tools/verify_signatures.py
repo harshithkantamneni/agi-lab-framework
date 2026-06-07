@@ -191,7 +191,7 @@ def main():
     )
     parser.add_argument(
         "--program", default=None,
-        help="Scope scan to a single program (e.g., program_1_opus47_on_18gb). Default: current program per state.md.",
+        help="Scope scan to a single program (e.g., program_1_example). Default: current program per state.md.",
     )
     parser.add_argument(
         "--full", action="store_true",

@@ -34,9 +34,9 @@ def test_load_schema_skips_legacy_no_block():
 def test_render_template_substitutes_payload_vars():
     from tools.handler_schema import render_template
     template = "programs/{program}/phase{to_phase_num}_*.md"
-    payload = {"program": "program_2_dense_vs_moe_sub100m", "to_phase": "P10"}
+    payload = {"program": "program_2_example", "to_phase": "P10"}
     rendered = render_template(template, payload)
-    assert rendered == "programs/program_2_dense_vs_moe_sub100m/phase10_*.md"
+    assert rendered == "programs/program_2_example/phase10_*.md"
 
 
 def test_render_template_handles_missing_var():

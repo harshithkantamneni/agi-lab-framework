@@ -49,7 +49,7 @@ Acknowledge the lab in `## Acknowledgments` (placed before References).
 Sample text:
 
 > The methodology, training runs, and review chain reported in this paper
-> were produced by an autonomous multi-agent research lab (the AGI Lab,
+> were produced by an autonomous multi-agent research lab (the lab,
 > 30 seed roles running on Claude Opus 4.7) operated on commodity Apple
 > M3 Pro hardware. The lab is described as instrument in §<N> and is
 > available as a research artifact at <repo URL on release>.
