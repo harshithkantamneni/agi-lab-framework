@@ -45,6 +45,12 @@ SIG_PATTERNS = [
     re.compile(r"\|\s*([A-Za-z_]+)\s*✓\s*\|"),
     # Sign-off block: "Signed: <role>" or "Signature: <role>" in isolation
     re.compile(r"^(?:Signed|Signature)\s*[:\-]\s*`?([A-Za-z_]+)`?\s*$", re.MULTILINE),
+    # **<role> signature:** ✓ — the format the D-109 lock actually used
+    # (`**PI signature:** ✓ (2026-04-17)`, unanimous_lock_1i.md line 122). The four
+    # patterns above did not match it; added 2026-09-17 after the replay audit.
+    re.compile(r"\*\*([A-Za-z_]+)\s+signature\s*:?\s*\*\*\s*✓", re.IGNORECASE),
+    # <role> signature: ✓ at start of line, unbolded variant of the same convention
+    re.compile(r"^\s*([A-Za-z_]+)\s+signature\s*:\s*✓", re.MULTILINE | re.IGNORECASE),
 ]
 
 # Role names that are eligible for signatures (from agents.json + retired).
