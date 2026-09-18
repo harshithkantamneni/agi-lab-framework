@@ -20,6 +20,7 @@ See data/procedures.md §"Signature Forgery Remediation".
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import os
 import re
@@ -52,6 +53,94 @@ SIG_PATTERNS = [
     # <role> signature: ✓ at start of line, unbolded variant of the same convention
     re.compile(r"^\s*([A-Za-z_]+)\s+signature\s*:\s*✓", re.MULTILINE | re.IGNORECASE),
 ]
+
+
+# --- Citation and quotation handling -------------------------------------------------
+# Two classes of FALSE POSITIVE were measured on the live lab tree on 2026-09-17 by
+# running this detector over 289 commits of history (see the E-FORGE census). Both are
+# fixed here, with regression tests in tests/test_verify_signatures_patterns.py.
+#
+#   (a) Citation paths were compared verbatim. Real citations in the lab carry markdown
+#       backticks, a trailing parenthetical, or a short `<role>/<name>` form with no
+#       `data/agents/` prefix and no `.md`. All three resolved to "file does not exist"
+#       while the file was sitting on disk.
+#   (b) Prose that QUOTES the convention (`the text-based **PI ✓** convention`) matched
+#       the signature patterns, so the lab's own paper about signature forgery was
+#       flagged as signature forgery.
+
+_TRAILING_PROSE = re.compile(r"\s*[(,;].*$", re.DOTALL)
+
+
+def normalize_episodic_ref(raw: str, role: str) -> list[str]:
+    """Return candidate repo-relative paths for a cited episodic record, best first.
+
+    Handles: surrounding backticks/quotes/whitespace, a trailing parenthetical or
+    comma-clause inside the brackets, a missing `.md`, and the short `<role>/<name>`
+    form used in practice instead of the full `data/agents/<role>/episodic/<name>.md`.
+    """
+    ref = raw.strip().strip("`'\"")
+    ref = _TRAILING_PROSE.sub("", ref).strip().strip("`'\"")
+    ref = ref.lstrip("/")
+    if not ref:
+        return []
+    cands: list[str] = []
+
+    def add(p: str) -> None:
+        if p not in cands:
+            cands.append(p)
+        if not p.endswith(".md") and f"{p}.md" not in cands:
+            cands.append(f"{p}.md")
+
+    add(ref)
+    if not ref.startswith("data/agents/"):
+        # `pi/2026-04-20_x` or `2026-04-20_x` -> data/agents/<role>/episodic/...
+        tail = ref.split("/", 1)[1] if ref.startswith(f"{role}/") else ref
+        add(f"data/agents/{role}/episodic/{tail}")
+        add(f"data/agents/{ref}")
+    return cands
+
+
+_DATE = re.compile(r"(\d{4}-\d{2}-\d{2})")
+
+
+def signature_date(line_text: str):
+    """The date the signature claims for itself, if it carries one.
+
+    The lab writes dated attestations (`**pi ✓** 2026-04-24 D-181 APPROVE`), which is
+    what makes a retrospective audit possible at all.
+    """
+    m = _DATE.search(line_text)
+    if not m:
+        return None
+    try:
+        return dt.date.fromisoformat(m.group(1))
+    except ValueError:
+        return None
+
+
+def episodic_date(path: Path):
+    """The date an episodic record belongs to: its filename date if it has one, else mtime."""
+    m = _DATE.search(path.name)
+    if m:
+        try:
+            return dt.date.fromisoformat(m.group(1))
+        except ValueError:
+            pass
+    try:
+        return dt.date.fromtimestamp(path.stat().st_mtime)
+    except OSError:
+        return None
+
+
+def _in_code_span(line: str, pos: int) -> bool:
+    """True if offset `pos` sits inside a markdown backtick code span.
+
+    A signature written inside backticks is a quotation of the convention, not an
+    attestation. Counting backticks before the match is enough for single-line spans,
+    which is the only form these documents use.
+    """
+    return line.count("`", 0, pos) % 2 == 1
+
 
 # Role names that are eligible for signatures (from agents.json + retired).
 # Role names with ✓ found outside this set are treated as typos, not signatures.
@@ -107,6 +196,8 @@ def find_signatures(paths: Iterable[Path]) -> list[Signature]:
                     role = m.group(1).lower() if m.groups() else "pi"  # the PI+Director unanimous pattern
                     if role not in {r.lower() for r in KNOWN_ROLES}:
                         continue
+                    if _in_code_span(line, m.start()):
+                        continue  # a quoted convention, not an attestation
                     ep_match = re.search(
                         r"\[episodic:\s*([^\]]+)\]", line
                     )
@@ -121,10 +212,20 @@ def find_signatures(paths: Iterable[Path]) -> list[Signature]:
     return sigs
 
 
-def verify_signature(sig: Signature, window_seconds: int) -> Forgery | None:
-    """Check if sig has a corresponding episodic entry within window_seconds of now.
+def verify_signature(sig: Signature, window_seconds: int, as_of=None) -> Forgery | None:
+    """Check that sig has a corresponding dispatch record.
 
-    Returns None if verified, Forgery if not.
+    `as_of=None` (default) is the LIVE gate: the episodic record must have been modified
+    within window_seconds of now. That is correct at a session boundary and only there.
+
+    `as_of` set to a date, or to the string "signature" (use the date the signature
+    carries), is the RETROSPECTIVE audit: the episodic record must be dated within the
+    window of that reference date instead of of now. Without this, every signature older
+    than the window flags, so a per-phase or per-program audit run days later reports the
+    whole archive as forged. Measured on the live lab tree 2026-09-17: 6 of 9 reported
+    forgeries were this artefact.
+
+    Returns None if verified (or not judgeable retrospectively), Forgery if not.
     """
     # Director is the session itself — signatures are self-attestation, not
     # dispatched-agent attestation. The attack vector we care about is Director
@@ -135,13 +236,20 @@ def verify_signature(sig: Signature, window_seconds: int) -> Forgery | None:
 
     # If the signature cites [episodic: <path>], verify the file exists and is recent.
     if sig.has_episodic_ref:
-        ep_path = REPO_ROOT / sig.episodic_ref_path
-        if not ep_path.exists():
+        ep_path = None
+        for cand in normalize_episodic_ref(sig.episodic_ref_path, sig.role):
+            probe = REPO_ROOT / cand
+            if probe.exists():
+                ep_path = probe
+                break
+        if ep_path is None:
+            tried = ", ".join(normalize_episodic_ref(sig.episodic_ref_path, sig.role)) or "(unparseable)"
             return Forgery(
                 role=sig.role,
                 source_file=sig.source_file,
                 line_number=sig.line_number,
-                reason=f"signature cites episodic [{sig.episodic_ref_path}] but file does not exist",
+                reason=(f"signature cites episodic [{sig.episodic_ref_path}] but no such file "
+                        f"(tried: {tried})"),
                 line_text=sig.line_text,
             )
         # Cited file exists; verify it references this signature's source.
@@ -168,6 +276,26 @@ def verify_signature(sig: Signature, window_seconds: int) -> Forgery | None:
             reason=f"role {sig.role} has no episodic/ directory — impossible that agent was dispatched",
             line_text=sig.line_text,
         )
+    # Retrospective mode: compare record dates against the signature's own reference date.
+    if as_of is not None:
+        ref = signature_date(sig.line_text) if as_of == "signature" else as_of
+        if ref is None:
+            return None  # undated signature: not judgeable after the fact, not evidence of forgery
+        window_days = max(1, window_seconds // 86400)
+        for f in sorted(ep_dir.glob("*.md")):
+            d = episodic_date(f)
+            if d is not None and abs((ref - d).days) <= window_days:
+                return None
+        return Forgery(
+            role=sig.role,
+            source_file=sig.source_file,
+            line_number=sig.line_number,
+            reason=(f"signature dated {ref} claims {sig.role} approved, but "
+                    f"data/agents/{sig.role}/episodic/ has no record dated within "
+                    f"{window_days}d of it"),
+            line_text=sig.line_text,
+        )
+
     # Look for any .md file modified within window_seconds.
     now = time.time()
     recent_files = []
@@ -206,6 +334,13 @@ def main():
     parser.add_argument(
         "--window-hours", type=int, default=48,
         help="How recent must the episodic record be (hours). Default: 48.",
+    )
+    parser.add_argument(
+        "--as-of", default=None, metavar="DATE|signature",
+        help=("Audit retrospectively: match episodic records against this reference date, or "
+              "against the date each signature carries (--as-of signature), instead of against "
+              "now. Required for any audit of past work; without it every signature older than "
+              "--window-hours is reported as forged."),
     )
     parser.add_argument(
         "--verbose", action="store_true",
@@ -251,9 +386,19 @@ def main():
                   f"{' [episodic ref]' if s.has_episodic_ref else ''}")
 
     window = args.window_hours * 3600
+    as_of = args.as_of
+    if as_of not in (None, "signature"):
+        try:
+            as_of = dt.date.fromisoformat(as_of)
+        except ValueError:
+            parser.error("--as-of must be YYYY-MM-DD or the word 'signature'")
+    if args.full and as_of is None:
+        print("NOTE: --full without --as-of runs the LIVE criterion over the whole archive, "
+              "so every signature older than --window-hours will be reported. For a "
+              "retrospective audit use --as-of signature.", file=sys.stderr)
     forgeries: list[Forgery] = []
     for s in sigs:
-        f = verify_signature(s, window)
+        f = verify_signature(s, window, as_of=as_of)
         if f is not None:
             forgeries.append(f)
 
