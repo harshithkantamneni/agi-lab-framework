@@ -319,6 +319,195 @@ def verify_signature(sig: Signature, window_seconds: int, as_of=None) -> Forgery
     return None  # at least one recent episodic file exists; signature plausibly real
 
 
+
+# ---------------------------------------------------------------------------
+# Dispatch-identity audit (D-109 follow-up, added 2026-09-17).
+#
+# Everything above asks whether a dispatch record EXISTS. A role-labelled record can
+# exist for work performed by a generic agent: the Director dispatches
+# subagent_type="general-purpose", names the intended role in the free-text description,
+# hands that agent the role's procedural file to read, and files the result under
+# data/agents/<role>/episodic/. Existence is satisfied; identity is not.
+#
+# Measured on this lab's own archive 2026-09-17: of 174 non-director episodic receipts,
+# 31 are dated before the first dispatch of the role they are filed under, and one role
+# (hypothesis_generator) has a receipt but was never dispatched by type in 763 sessions.
+# Between 2026-04-17 and 2026-04-20 the lab made 48 dispatches, 0 of them typed, while 30
+# roles sat registered in agents.json. The D-109 remediation receipt is in that set: it
+# declares itself "the first real invocation of the registered pi agent" while the runner
+# logged ">>> AGENT general-purpose - ... (pi role)". The first typed pi dispatch came
+# seven days later. So the fix for D-109 exhibited D-109's own structure: an attestation
+# naming a property the substrate does not have, and no gate checking the property named.
+#
+# The evidence used here is deliberately not written by the Director. The session logs
+# come from run_agi_lab.sh, and tools/stream_formatter.py prints the AGENT line straight
+# out of the Task call's subagent_type parameter. Where the Director's receipts and the
+# runner's logs disagree about who ran, the runner is the witness.
+# ---------------------------------------------------------------------------
+
+SESSION_LOG_DIR = REPO_ROOT / "data" / "infra" / "session_logs"
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+_LOG_HEADER = re.compile(r"=== Session (\d+) starting at (.+?) ===")
+_AGENT_LINE = re.compile(r">>> AGENT\s+([A-Za-z0-9_\-]+)\s*(?:—\s*(.*))?")
+_LAUNCH_LINE = re.compile(r">>> Launching agent:\s*([A-Za-z0-9_\-]+)")
+_LOG_STAMP = re.compile(r"_(\d{8})_(\d{6})\.log$")
+_HDR_TIME = re.compile(r"\w+ (\w+) +(\d+) (\d+):(\d+):(\d+) \S+ (\d+)")
+_MONTHS = {m: i + 1 for i, m in enumerate(
+    "Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec".split())}
+
+# subagent_types that carry no role identity. A dispatch with one of these is generic
+# however the description is worded.
+GENERIC_TYPES = {"general-purpose", "general", "superpowers"}
+
+
+@dataclass
+class IdentityViolation:
+    role: str
+    receipt: str
+    receipt_date: str
+    reason: str
+
+
+def _log_start_time(path: Path, text: str):
+    """Wall-clock start of a session, from the runner's header, else the filename."""
+    m = _LOG_HEADER.search(text)
+    if m:
+        h = _HDR_TIME.match(m.group(2).strip())
+        if h and h.group(1) in _MONTHS:
+            mo, d, H, M, S, Y = h.groups()
+            return dt.datetime(int(Y), _MONTHS[mo], int(d), int(H), int(M), int(S))
+    fm = _LOG_STAMP.search(path.name)
+    if fm:
+        return dt.datetime.strptime(fm.group(1) + fm.group(2), "%Y%m%d%H%M%S")
+    return None
+
+
+def read_dispatch_log(log_dir: Path | None = None):
+    """Reconstruct the dispatch timeline from the runner's session logs.
+
+    Returns (first_by_type, generic_naming_a_role, n_logs, n_dispatches); first_by_type
+    maps subagent_type -> the earliest datetime it was dispatched.
+    """
+    log_dir = log_dir or SESSION_LOG_DIR
+    first: dict = {}
+    generic: list = []
+    n_logs = n_disp = 0
+    if not log_dir.is_dir():
+        return first, generic, 0, 0
+    if not KNOWN_ROLES:
+        # Called directly rather than through main(). Without the roster the
+        # generic-substitution flag silently never fires, which is the one thing this
+        # function exists to catch.
+        _load_known_roles()
+    known = {r.lower() for r in KNOWN_ROLES if r.lower() != "director"}
+    for path in sorted(log_dir.glob("*.log")):
+        n_logs += 1
+        try:
+            text = _ANSI.sub("", path.read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            continue
+        when = _log_start_time(path, text)
+        for line in text.splitlines():
+            m = _AGENT_LINE.search(line)
+            desc = (m.group(2) or "") if m else ""
+            if m is None:
+                m = _LAUNCH_LINE.search(line)
+            if m is None:
+                continue
+            n_disp += 1
+            stype = m.group(1)
+            if when is not None and (stype not in first or when < first[stype]):
+                first[stype] = when
+            if stype in GENERIC_TYPES and desc:
+                named = sorted(r for r in known
+                               if re.search(r"\b" + re.escape(r).replace("_", "[_ ]") + r"\b",
+                                            desc, re.IGNORECASE))
+                if named:
+                    generic.append({"when": when, "log": path.name,
+                                    "subagent_type": stype, "named_roles": named,
+                                    "desc": desc.strip()[:120]})
+    return first, generic, n_logs, n_disp
+
+
+def audit_dispatch_identity(log_dir: Path | None = None):
+    """Check every episodic receipt against the runner's record of who actually ran.
+
+    A receipt is a violation when the role it is filed under was never dispatched by
+    subagent_type, or was first dispatched after the receipt's date. `director` is
+    excluded by construction: it is the top-level session, not a dispatched subagent.
+    """
+    first, generic, n_logs, n_disp = read_dispatch_log(log_dir)
+    violations: list = []
+    receipts = 0
+    for ep_dir in sorted(AGENTS_DIR.glob("*/episodic")):
+        role = ep_dir.parent.name
+        if role.lower() == "director":
+            continue
+        for f in sorted(ep_dir.glob("*.md")):
+            receipts += 1
+            dm = re.match(r"(\d{4}-\d{2}-\d{2})", f.name)
+            rdate = dt.date.fromisoformat(dm.group(1)) if dm else None
+            fd = first.get(role)
+            rel = str(f.relative_to(REPO_ROOT))
+            shown = rdate.isoformat() if rdate else "(undated)"
+            if fd is None:
+                violations.append(IdentityViolation(
+                    role=role, receipt=rel, receipt_date=shown,
+                    reason=(f"no dispatch with subagent_type={role} appears in any of "
+                            f"{n_logs} session logs; the receipt is filed under a role "
+                            f"that was never instantiated"),
+                ))
+            elif rdate is not None and rdate < fd.date():
+                violations.append(IdentityViolation(
+                    role=role, receipt=rel, receipt_date=shown,
+                    reason=(f"receipt dated {shown}, but the first dispatch with "
+                            f"subagent_type={role} was {fd:%Y-%m-%d %H:%M} - the work it "
+                            f"records was performed by some other agent type"),
+                ))
+    stats = {"logs": n_logs, "dispatches": n_disp, "receipts": receipts,
+             "types_seen": len(first), "generic_naming_a_role": generic,
+             "first_by_type": first}
+    return violations, stats
+
+
+def run_identity_audit(verbose: bool = False) -> int:
+    violations, st = audit_dispatch_identity()
+    if not st["logs"]:
+        print("[verify_signatures] cannot audit dispatch identity: no session logs under "
+              "data/infra/session_logs. Note that .gitignore excludes them, so a fresh "
+              "clone has none; run this against a live lab tree.", file=sys.stderr)
+        return 2
+    print(f"[verify_signatures] dispatch-identity audit: {st['logs']} session logs, "
+          f"{st['dispatches']} dispatches, {st['types_seen']} distinct subagent_types, "
+          f"{st['receipts']} non-director episodic receipts")
+    gen = st["generic_naming_a_role"]
+    if gen:
+        print(f"[verify_signatures] {len(gen)} generic dispatch(es) name a registered role in "
+              "the description: role-shaped work done by an agent with no role identity")
+        if verbose:
+            for g in gen:
+                stamp = f"{g['when']:%Y-%m-%d %H:%M}" if g["when"] else "(no time)"
+                print(f"    {stamp}  {g['subagent_type']:16} "
+                      f"names={','.join(g['named_roles'])}  {g['desc']}")
+    if verbose:
+        print("[verify_signatures] first dispatch per subagent_type:")
+        for t, w in sorted(st["first_by_type"].items(), key=lambda kv: kv[1]):
+            print(f"    {w:%Y-%m-%d %H:%M}  {t}")
+    if not violations:
+        print(f"[verify_signatures] OK: all {st['receipts']} receipts are backed by a "
+              "dispatch of their own role")
+        return 0
+    print(f"[verify_signatures] IDENTITY VIOLATION: {len(violations)} receipt(s) filed under "
+          "a role that did not run them", file=sys.stderr)
+    for v in violations:
+        print(f"  {v.receipt} - {v.role}", file=sys.stderr)
+        print(f"    reason: {v.reason}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("A dispatch record existing is not the same as the named role having run. "
+          "Re-dispatch with subagent_type set to the role, or restate the receipt as "
+          "generic-agent work.", file=sys.stderr)
+    return 1
+
 def main():
     parser = argparse.ArgumentParser(
         description="Anti-forgery detector for lab governance signatures."
@@ -343,12 +532,22 @@ def main():
               "--window-hours is reported as forged."),
     )
     parser.add_argument(
+        "--check-identity", action="store_true",
+        help=("Audit dispatch IDENTITY rather than signature existence: check every "
+              "episodic receipt against the runner's session logs, which record the actual "
+              "subagent_type of each dispatch. Catches role-labelled records produced by a "
+              "generic agent - the failure mode the D-109 remediation itself exhibited."),
+    )
+    parser.add_argument(
         "--verbose", action="store_true",
         help="Print every signature found (not just forgeries).",
     )
     args = parser.parse_args()
 
     _load_known_roles()
+
+    if args.check_identity:
+        sys.exit(run_identity_audit(verbose=args.verbose))
 
     # Determine which paths to scan.
     paths_to_scan: list[Path] = []
