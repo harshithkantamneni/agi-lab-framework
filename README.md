@@ -56,7 +56,7 @@ The lab operates autonomously: the Director runs in a continuous loop, claims wo
 - **Think on disk, not in context**, agents write progressively to durable storage; conversation context is throwaway
 - **Pre-registration discipline**, questions are locked in P1; experimental designs are locked in P6; outcomes pre-committed before any data is collected
 - **Archive, never delete**, failed attempts, superseded artifacts, even forged signatures are preserved with breadcrumbs
-- **Anti-forgery (D-109 pattern)**, PI/Director must personally edit their own sign-off blocks; orthogonal verifier checks integrity
+- **Anti-forgery (D-109 pattern)**, PI/Director must personally edit their own sign-off blocks; orthogonal verifier checks integrity. **We later audited this remedy against the lab's own archive and found all three of its components had been defective for seven weeks** — the detector's patterns never matched the incident that prompted it, the gate never executed (a shell precedence bug, 270 missed invocations), and the audit recorded passes over empty scans. See [`audits/`](audits/README.md) for the scripts, the counts, and the fixes.
 - **One sized job per session**, atomic units of work that complete within ~10% of a session's context capacity
 
 A research program runs end-to-end through the full 15-phase lifecycle described below, from locking a question to producing a typeset paper under formal multi-outcome decision rules.
