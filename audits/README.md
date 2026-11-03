@@ -27,7 +27,7 @@ Director's own write scope.
 python3 audits/gate_audit.py              # did the gate ever run? 270 / 0 / 0
 python3 audits/gate_audit.py --prove      # reproduces the shell precedence parse
 python3 audits/role_identity_audit.py     # receipts vs actual subagent_type dispatches
-python3 tools/verify_signatures.py --check-identity --verbose   # the same test, as a gate
+python3 tools/verify_signatures.py --check-identity --verbose   # the same test, as a command
 ```
 
 Run them from a live lab tree. `gate_audit.py` and `role_identity_audit.py` expect the
@@ -41,8 +41,16 @@ clone has none, and `--check-identity` exits 2 ("cannot judge") rather than 0 in
 - **#39** — the three false-positive classes, plus `--as-of` for retrospective audits.
 - **#40** — `--check-identity`: dispatch *identity*, not just dispatch existence, with 12
   regression tests including that absent logs exit "cannot judge" rather than "verified".
-- `dfedb1c` — the gate's shell precedence, found and fixed by the operator independently
+- `d5af181` — the gate's shell precedence, found and fixed by the operator independently
   of this audit and four days after the archive analysed here ends.
+
+## Known gaps
+
+These fixes improve the detector. They don't close it. A review of the code in November 2026 found:
+
+- The runner's gate doesn't pass `--check-identity`, so it runs the signature check without the identity test.
+- Text in a director session can fake a `>>> AGENT pi` line, because the detector searches every log line and assistant text is printed into the same log.
+- An empty scan exits 0, and so does a sign-off phrased outside the detector's pattern list.
 
 ## The generalisable point
 
