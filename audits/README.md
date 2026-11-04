@@ -26,6 +26,7 @@ Director's own write scope.
 ```
 python3 audits/gate_audit.py              # did the gate ever run? 270 / 0 / 0
 python3 audits/gate_audit.py --prove      # reproduces the shell precedence parse
+python3 audits/gate_audit.py --csv OUT    # one row per session log, with no log text
 python3 audits/role_identity_audit.py     # receipts vs actual subagent_type dispatches
 python3 tools/verify_signatures.py --check-identity --verbose   # the same test, as a command
 ```
@@ -34,6 +35,14 @@ Run them from a live lab tree. `gate_audit.py` and `role_identity_audit.py` expe
 lab at a path you set at the top of each file; `--check-identity` resolves from the repo
 root. All three need `data/infra/session_logs/`, which `.gitignore` excludes — a fresh
 clone has none, and `--check-identity` exits 2 ("cannot judge") rather than 0 in that case.
+
+## Per-session results
+
+[`gate_audit_sessions.csv`](gate_audit_sessions.csv) is the `--csv` output for the archive
+analysed here: 763 session logs, 270 reaching the gate's precondition, 0 containing the
+detector's output, 0 blocks, and 6 where the detector was run by hand. The logs stay private.
+Each row carries the log's size and SHA-256, so the table can be checked against the logs
+if they're ever shared.
 
 ## Fixes shipped here
 
