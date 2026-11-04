@@ -23,7 +23,7 @@ makes the left side false and `&&` short-circuits, so python3 is never invoked a
 *fails* -- and then in the wrong interpreter. `--prove` reproduces this in a scratch
 directory rather than asking you to take the parse on faith.
 """
-import re, subprocess, sys, tempfile, os
+import csv, hashlib, re, subprocess, sys, tempfile, os
 from pathlib import Path
 
 REPO = Path.home() / "mnt/AGI"
@@ -42,6 +42,32 @@ GATE_BLOCK = "BLOCKED: verify_signatures.py detected forged signatures"
 PRECONDITION = "GRACEFUL_CHECKPOINT"
 # A Director tool call, i.e. the lab grading itself -- not the gate.
 MANUAL_CALL = re.compile(r"┌?\s*\$\s*.*python3?\s+\S*verify_signatures\.py")
+
+
+def session_rows(logs):
+    """One row per session log: what the gate did, with no log text."""
+    for lf in logs:
+        raw = lf.read_bytes()
+        txt = ANSI.sub("", raw.decode("utf-8", errors="replace"))
+        yield {
+            "session_log": lf.name,
+            "gate_precondition_met": int(PRECONDITION in txt),
+            "detector_output_in_log": int(any(s in txt for s in DETECTOR_OUTPUT)),
+            "gate_blocked": int(GATE_BLOCK in txt),
+            "detector_run_by_hand": int(bool(MANUAL_CALL.search(txt))),
+            "log_bytes": len(raw),
+            "log_sha256": hashlib.sha256(raw).hexdigest(),
+        }
+
+
+def write_csv(logs, path) -> int:
+    rows = list(session_rows(logs))
+    with open(path, "w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        w.writerows(rows)
+    print(f"[gate] wrote {len(rows)} rows to {path}")
+    return 0
 
 
 def prove() -> int:
@@ -87,6 +113,8 @@ def main() -> int:
         print(f"[gate] no session logs at {LOGS}", file=sys.stderr)
         return 2
     logs = sorted(LOGS.glob("*.log"))
+    if "--csv" in sys.argv:
+        return write_csv(logs, sys.argv[sys.argv.index("--csv") + 1])
     pre = out = blocked = manual = 0
     pre_logs, out_logs, manual_logs = [], [], []
     for lf in logs:
