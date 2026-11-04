@@ -1,0 +1,8 @@
+{
+  "_comment": "Documents that do not count as signed without a verified structured sign-off from each listed role. A new document matching a rule fails the gate until it has them, or until it declares the draft marker in its first 30 lines. Globs use fnmatch, so * also crosses directories.",
+  "draft_marker": "status: draft",
+  "rules": [
+    {"glob": "programs/*/closure_memo.md", "roles": ["pi", "director"]},
+    {"glob": "programs/*unanimous_lock*.md", "roles": ["pi", "director"]}
+  ]
+}

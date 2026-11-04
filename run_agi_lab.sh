@@ -157,6 +157,7 @@ write_session_brief() {
         echo "Memory last session: ${last_telemetry}"
         echo "Substrate changelog: ${substrate_unread_n} unread (latest: ${substrate_latest_ts:-none}, cursor: ${substrate_cursor_ts:-<none>})"
         echo "  → ${substrate_last_summary}"
+        echo "Sign-off gate: ${SIGNOFF_GATE_STATUS_LINE:-not run yet by this runner}"
         echo ""
         echo "First tool call MUST be:"
         echo "  memory.view session_brief.md  (you are reading it now)"
@@ -840,12 +841,174 @@ watchdog_cli_hang() {
     done
 }
 
+# Files the sign-off gate's verdict depends on. Pinned once at runner start, before any agent
+# runs, and compared at every gate. Editing one of these needs a runner restart.
+TRUST_BASE_FILES=(
+    run_agi_lab.sh
+    tools/verify_signatures.py
+    tools/dispatch_ledger.py
+    tools/stream_formatter.py
+    config/claude_lab_settings.template.json
+    data/agents/_shared/signoff_requirements.json
+)
+
+_trust_base_digest() {
+    local f
+    for f in "${TRUST_BASE_FILES[@]}"; do
+        if [ ! -f "$f" ]; then
+            printf '%s MISSING\n' "$f"
+        elif command -v shasum >/dev/null 2>&1; then
+            printf '%s %s\n' "$f" "$(shasum -a 256 < "$f")"
+        else
+            printf '%s %s\n' "$f" "$(sha256sum < "$f")"
+        fi
+    done
+}
+
+_run_signoff_gate() {
+    # Fail-closed clean-exit check (the audit in audits/README.md found the old gate had
+    # never run, and that nothing noticed). Only one outcome lets an exit through: this
+    # function saw the detector finish and print the nonce it was handed, with exit 0 or 3.
+    # A missing, unstartable, crashed or stubbed detector leaves SIGNOFF_GATE_RESULT=blocked.
+    #
+    # The detector is stdlib-only, so it runs on system python3 with -I and no venv. An agent
+    # can write to .venv and to tools/, and neither may change what this check executes.
+    #
+    # Args: $1 = run id, $2 = session log. Sets SIGNOFF_GATE_RESULT, SIGNOFF_GATE_DETAIL.
+    local run_id="$1"
+    local session_log="$2"
+    local nonce current_pin
+    local rc=0
+    local out=""
+    SIGNOFF_GATE_RESULT="blocked"
+    SIGNOFF_GATE_DETAIL="unset"
+
+    current_pin="$(_trust_base_digest)" || current_pin="digest_failed"
+    if [ "$current_pin" != "${TRUST_BASE_PIN:-}" ]; then
+        SIGNOFF_GATE_DETAIL="trust_base_changed"
+        {
+            echo "[SIG-GATE] files the gate depends on changed since this runner started."
+            echo "If an operator made the change, restart the runner. Otherwise an agent did it."
+            diff <(printf '%s\n' "${TRUST_BASE_PIN:-}") <(printf '%s\n' "$current_pin") || true
+        } | tee data/infra/signoff_gate_last.txt >> "$session_log"
+        return 0
+    fi
+
+    nonce="${run_id}-$$-${RANDOM}${RANDOM}"
+    out="$(python3 -I tools/verify_signatures.py --gate --check-identity \
+        --run-id "$run_id" --nonce "$nonce" 2>&1)" || rc=$?
+    printf '%s\n' "$out" >> "$session_log"
+    printf '%s\n' "$out" > data/infra/signoff_gate_last.txt
+
+    case "$out" in
+        *"GATE-VERDICT nonce=$nonce "*) ;;
+        *)
+            SIGNOFF_GATE_DETAIL="detector_did_not_finish_exit_${rc}"
+            return 0
+            ;;
+    esac
+    case "$rc" in
+        0) SIGNOFF_GATE_RESULT="verified"; SIGNOFF_GATE_DETAIL="ok" ;;
+        3) SIGNOFF_GATE_RESULT="empty"; SIGNOFF_GATE_DETAIL="nothing_new_to_verify" ;;
+        1) SIGNOFF_GATE_DETAIL="forgery" ;;
+        *) SIGNOFF_GATE_DETAIL="detector_exit_${rc}" ;;
+    esac
+    return 0
+}
+
+_apply_signoff_gate() {
+    # Runs on every exit, whatever reason the Director wrote. The reason comes from a file
+    # the Director authors, so it cannot decide whether the check happens.
+    # Args: $1 = run id, $2 = session log. May change EXIT_REASON.
+    local run_id="$1"
+    local session_log="$2"
+    _run_signoff_gate "$run_id" "$session_log"
+    echo "[SIG-GATE] run=${run_id} exit_reason=${EXIT_REASON} result=${SIGNOFF_GATE_RESULT} detail=${SIGNOFF_GATE_DETAIL}" \
+        | tee -a "$session_log"
+    SIGNOFF_GATE_STATUS_LINE="${SIGNOFF_GATE_RESULT} (${SIGNOFF_GATE_DETAIL}) on ${run_id}"
+    if [ "$SIGNOFF_GATE_RESULT" != "blocked" ]; then
+        SIGNOFF_GATE_BLOCKS=0
+        return 0
+    fi
+
+    SIGNOFF_GATE_BLOCKS=$((SIGNOFF_GATE_BLOCKS + 1))
+    SIGNOFF_GATE_STATUS_LINE="BLOCKED (${SIGNOFF_GATE_DETAIL}) on ${run_id}; read data/infra/signoff_gate_last.txt"
+    echo "================================================" | tee -a "$session_log"
+    if [ "$SIGNOFF_GATE_DETAIL" = "forgery" ]; then
+        echo "  BLOCKED: verify_signatures.py detected forged signatures." | tee -a "$session_log"
+        echo "  Director must dispatch real agent(s), update accountability_ledger.md," | tee -a "$session_log"
+        echo "  and remediate offending documents. Forcing immediate re-entry." | tee -a "$session_log"
+    else
+        echo "  BLOCKED: sign-off gate could not reach a verdict (${SIGNOFF_GATE_DETAIL})." | tee -a "$session_log"
+        echo "  A check that cannot run is not a pass. Clean exit refused." | tee -a "$session_log"
+    fi
+    echo "  Consecutive blocks: ${SIGNOFF_GATE_BLOCKS}/${SIGNOFF_GATE_MAX_BLOCKS}" | tee -a "$session_log"
+    echo "================================================" | tee -a "$session_log"
+    osascript -e 'display notification "Sign-off gate blocked this session exit." with title "AGI Lab: Sign-off Gate"' 2>/dev/null || true
+
+    # A rate limit still has to be waited out; the block is carried in the brief and re-checked.
+    if [ "$EXIT_REASON" != "RATE_LIMIT" ]; then
+        EXIT_REASON="SIGNATURE_FORGERY_UNADDRESSED"
+    fi
+    # Without this flag an empty queue and stable state would skip the Director entirely, and
+    # "forcing re-entry" would be a log message. A schema-violation flag already there wins
+    # for one session; the gate blocks again on the next exit if nothing changed.
+    if [ ! -f "$REDISPATCH_FLAG" ]; then
+        printf 'violation_type=signoff_gate\nreason=%s\nsession_id=%s\n' \
+            "$SIGNOFF_GATE_DETAIL" "$run_id" > "$REDISPATCH_FLAG"
+    fi
+    # Fail closed, and bounded. A broken detector must stop the lab, not spend tokens on
+    # sessions that cannot pass.
+    if [ "$SIGNOFF_GATE_BLOCKS" -ge "$SIGNOFF_GATE_MAX_BLOCKS" ]; then
+        {
+            echo "# Operator Review Pending: Sign-off Gate"
+            echo ""
+            echo "The sign-off gate blocked ${SIGNOFF_GATE_BLOCKS} consecutive session exits."
+            echo "Last run: ${run_id}. Last detail: ${SIGNOFF_GATE_DETAIL}."
+            echo ""
+            echo "- Read data/infra/signoff_gate_last.txt and the session log."
+            echo "- Forged sign-off: dispatch the real role, or remove the line."
+            echo "- trust_base_changed: find out who edited the file, then restart the runner."
+            echo "- detector_did_not_finish: run python3 -I tools/verify_signatures.py --preflight."
+            echo "- Remove this file to resume."
+        } > data/operator_review_pending.md
+        rm -f "$REDISPATCH_FLAG"
+        echo "[SIG-GATE] ${SIGNOFF_GATE_BLOCKS} consecutive blocks; halting for operator review." | tee -a "$session_log"
+    fi
+    return 0
+}
+
 echo "================================================"
 echo "  AGI LAB — Starting Autonomous Operation"
 echo "  Target: Beat Opus 4.6 on all benchmarks"
 echo "  Hardware: M3 Pro, 18GB, local only"
 echo "  $(date)"
 echo "================================================"
+
+# Sign-off evidence and agent settings. Refuse to start rather than run with a gate that
+# can only block. See audits/README.md, Threat model.
+mkdir -p programs data/infra
+if ! python3 -I tools/verify_signatures.py --preflight; then
+    echo "Sign-off evidence preflight failed; not starting. See the message above." >&2
+    exit 1
+fi
+# LAB_SANDBOX=off runs agents without the OS sandbox. Bash commands can then read the receipt
+# key, so a receipt no longer proves anything against a determined agent. The choice is written
+# into each run's ledger and printed in each gate verdict.
+LAB_SANDBOX="${LAB_SANDBOX:-on}"
+case "$LAB_SANDBOX" in
+    on) ;;
+    off) echo "WARNING: LAB_SANDBOX=off. The receipt key is not protected from agent shell commands." >&2 ;;
+    *) echo "LAB_SANDBOX must be on or off, got: ${LAB_SANDBOX}" >&2; exit 1 ;;
+esac
+if ! LAB_CLAUDE_SETTINGS="$(python3 -I tools/dispatch_ledger.py render-settings --sandbox "$LAB_SANDBOX")"; then
+    echo "Could not render agent settings; not starting." >&2
+    exit 1
+fi
+TRUST_BASE_PIN="$(_trust_base_digest)"
+SIGNOFF_GATE_BLOCKS=0
+SIGNOFF_GATE_MAX_BLOCKS="${SIGNOFF_GATE_MAX_BLOCKS:-3}"
+SIGNOFF_GATE_STATUS_LINE=""
 
 STABLE_SKIP_LOG="data/infra/stable_skip.log"
 HEARTBEAT_INTERVAL_MIN="${HEARTBEAT_INTERVAL_MIN:-240}"
@@ -923,6 +1086,7 @@ while true; do
                 {
                     claude --print --model claude-haiku-4-5 --effort high \
                         --dangerously-skip-permissions \
+                        --settings "$LAB_CLAUDE_SETTINGS" \
                         "$CONSOLIDATOR_PROMPT" \
                         >> data/infra/consolidator.log 2>&1 || \
                         echo "consolidator dispatch failed (non-fatal); will retry next iteration" \
@@ -985,10 +1149,15 @@ while true; do
     if [ -f "$REDISPATCH_FLAG" ]; then
         REDISPATCH_REASON=$(grep '^reason=' "$REDISPATCH_FLAG" 2>/dev/null | cut -d= -f2- || echo "unknown")
         REDISPATCH_SESSION=$(grep '^session_id=' "$REDISPATCH_FLAG" 2>/dev/null | cut -d= -f2- || echo "unknown")
+        REDISPATCH_TYPE=$(grep '^violation_type=' "$REDISPATCH_FLAG" 2>/dev/null | cut -d= -f2- || echo "unknown")
         rm -f "$REDISPATCH_FLAG"
         echo "$(date '+%Y-%m-%d %H:%M:%S') [SCHEMA-VIOLATION-REDISPATCH] reason=$REDISPATCH_REASON prev_session=$REDISPATCH_SESSION; FORCING Director spawn with correction prompt" \
             | tee -a data/infra/schema_violation_redispatch.log
-        export DIRECTOR_REDISPATCH_REASON="schema_violation_previous_session_exit"
+        if [ "$REDISPATCH_TYPE" = "signoff_gate" ]; then
+            export DIRECTOR_REDISPATCH_REASON="signoff_gate_blocked"
+        else
+            export DIRECTOR_REDISPATCH_REASON="schema_violation_previous_session_exit"
+        fi
         FORCE_SPAWN=1
     else
         unset DIRECTOR_REDISPATCH_REASON
@@ -1046,6 +1215,7 @@ while true; do
     TIMESTAMP=$(date +%Y%m%d_%H%M%S)
     SESSION_LOG="$LOG_DIR/session_${SESSION_NUM}_${TIMESTAMP}.log"
     SESSION_START_TIME=$(date +%s)
+    LAB_RUN_ID="session_${SESSION_NUM}_${TIMESTAMP}"
 
     echo "" | tee -a "$SESSION_LOG"
     echo "=== Session $SESSION_NUM starting at $(date) ===" | tee -a "$SESSION_LOG"
@@ -1100,6 +1270,7 @@ while true; do
     # --model opus: Opus 4.6 for all work
     # --effort max: maximum reasoning effort
     # --dangerously-skip-permissions: no permission prompts (autonomous)
+    # --settings: deny rules and the OS sandbox that keep agents off the sign-off evidence
     # --agents registers a STARTING ROSTER of specialized agents (per data/pi_notes.md
     # §"Design the Right Team for the Moment"). Director may also launch general-purpose
     # agents with inline role prompts when no registered role fits, instantiate templates
@@ -1120,6 +1291,10 @@ while true; do
     # that would kill the runner itself before the exit-code dispatch could
     # handle the case. Swap errexit off for just this pipe; pipefail + our own
     # $? capture still let us see what actually happened.
+    #
+    # stdout is the only channel the dispatch recorder reads. stderr goes straight to the log,
+    # so nothing printed there can reach the recorder as a stream event. LAB_RUN_ID is set for
+    # the formatter alone; the claude process does not get it.
     set +e
     claude \
         --print \
@@ -1129,10 +1304,13 @@ while true; do
         --model claude-opus-4-7 \
         --effort max \
         --dangerously-skip-permissions \
+        --settings "$LAB_CLAUDE_SETTINGS" \
         --agents "$(cat "$AGENTS_FILE")" \
         --append-system-prompt "$DIRECTOR_SYSTEM_ASSERT" \
         "$DIRECTOR_PROMPT" \
-        2>&1 | python3 -u tools/stream_formatter.py 2>&1 | tee -a "$SESSION_LOG"
+        2> >(tee -a "$SESSION_LOG" >&2) \
+        | LAB_RUN_ID="$LAB_RUN_ID" LAB_SANDBOX_STATE="$LAB_SANDBOX" python3 -I -u tools/stream_formatter.py 2>&1 \
+        | tee -a "$SESSION_LOG"
 
     EXIT_CODE=$?
     set -e
@@ -1226,35 +1404,12 @@ while true; do
         fi
     fi
 
-    # Structural teeth for signature forgery (D-110): before accepting GRACEFUL_CHECKPOINT,
-    # run verify_signatures.py. Any signature in program docs / state.md / decisions without
-    # a matching episodic record is a forgery. On detection, force re-entry with
-    # SIGNATURE_FORGERY_UNADDRESSED so Director must remediate (dispatch real agent, append
-    # D-N REMEDIATION appendix to offending docs, update accountability_ledger.md).
-    if [ "$EXIT_REASON" = "GRACEFUL_CHECKPOINT" ] && [ -x tools/verify_signatures.py ]; then
-        # Negate the WHOLE pipeline (activate AND verify), not just `source`.
-        # The old `! source ... && python3 ...` parsed as `(! source) && python3`,
-        # which was broken both ways: when the venv activated cleanly `! source`
-        # was false and the `&&` short-circuited, so verify_signatures.py NEVER
-        # ran (the forgery gate was silently dead); and a missing
-        # .venv/bin/activate made `source` fail fatally and abort the whole
-        # runner. Guard the venv first (a missing venv can never kill the runner),
-        # then run the real check in a subshell and negate its combined result.
-        if [ -f .venv/bin/activate ]; then
-            # shellcheck disable=SC1091
-            if ! ( source .venv/bin/activate && python3 tools/verify_signatures.py >> "$SESSION_LOG" 2>&1 ); then
-                echo "================================================" | tee -a "$SESSION_LOG"
-                echo "  BLOCKED: verify_signatures.py detected forged signatures." | tee -a "$SESSION_LOG"
-                echo "  Director must dispatch real agent(s), update accountability_ledger.md," | tee -a "$SESSION_LOG"
-                echo "  and remediate offending documents. Forcing immediate re-entry." | tee -a "$SESSION_LOG"
-                echo "================================================" | tee -a "$SESSION_LOG"
-                EXIT_REASON="SIGNATURE_FORGERY_UNADDRESSED"
-                osascript -e 'display notification "Forged signature detected. Director re-entering to remediate." with title "AGI Lab: Forgery Block"' 2>/dev/null || true
-            fi
-        else
-            echo "$(date '+%Y-%m-%d %H:%M:%S') [SIG-VERIFY] WARNING: .venv/bin/activate missing; skipping signature-forgery gate this session (cannot verify)." | tee -a "$SESSION_LOG"
-        fi
-    fi
+    # Structural teeth for signature forgery (D-110). A sign-off without a matching receipt
+    # refuses the clean exit and forces a session to remediate. The earlier version of this
+    # gate parsed as `(! source activate) && python3 ...` and so never ran the detector; see
+    # audits/README.md. _run_signoff_gate now treats anything short of a finished detector as
+    # a block.
+    _apply_signoff_gate "$LAB_RUN_ID" "$SESSION_LOG"
 
     SESSION_DURATION=$(( $(date +%s) - SESSION_START_TIME ))
 
@@ -1287,7 +1442,7 @@ while true; do
             sleep 5
             ;;
         SIGNATURE_FORGERY_UNADDRESSED)
-            echo "Signature forgery detected. Re-entering immediately to force remediation..." | tee -a "$SESSION_LOG"
+            echo "Sign-off gate blocked this exit (${SIGNOFF_GATE_DETAIL:-unknown}). Re-entering immediately to force remediation..." | tee -a "$SESSION_LOG"
             CONSECUTIVE_FAILS=0
             sleep 5
             ;;

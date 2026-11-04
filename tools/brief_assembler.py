@@ -329,6 +329,19 @@ def _build_correction_prompt(reason: str) -> str:
             "and Example D for the schema contract.\n\n"
             "---\n\n"
         )
+    if reason == "signoff_gate_blocked":
+        return (
+            "## CORRECTION PROMPT: the sign-off gate refused the previous session's exit\n\n"
+            "Read `data/infra/signoff_gate_last.txt` for what failed. The runner's close-out had "
+            "already applied that session's log, current and queue changes, so check them against "
+            "what the gate reports. For each failing sign-off, dispatch the real role in the "
+            "foreground, have it return its `SIGNOFF` line, and cite the receipt as described in "
+            "`data/agents/_shared/signoff_contract.md`. Do not rewrite a sign-off into a shape the "
+            "check does not catch. If the gate says it could not judge, or that its own files "
+            "changed, that needs the operator: say so in `session_exit.md`. The runner halts for "
+            "operator review after repeated blocks.\n\n"
+            "---\n\n"
+        )
     return (
         f"## CORRECTION PROMPT — redispatch reason: {reason}\n\n"
         "Previous session triggered a redispatch. Check session_exit_schema.md "

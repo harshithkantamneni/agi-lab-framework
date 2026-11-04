@@ -1,14 +1,32 @@
 #!/usr/bin/env python3
 """Stream formatter for Claude Code stream-json output.
 Reads JSON lines from stdin, prints human-readable real-time output.
-Shows: assistant text, tool calls, tool results, agent launches, thinking."""
+Shows: assistant text, tool calls, tool results, agent launches, thinking.
+
+Also the dispatch recorder's host: when the runner sets LAB_RUN_ID, every parsed event goes to
+tools/dispatch_ledger.py before display. The recorder sees structured events only. A failure
+here never stops display. It leaves the run without a seal, and the runner's gate then refuses
+the clean exit."""
 
 import json
+import pathlib
 import sys
 import os
 
 # Unbuffered output
 sys.stdout = os.fdopen(sys.stdout.fileno(), 'w', buffering=1)
+
+_recorder = None
+if os.environ.get("LAB_RUN_ID"):
+    try:
+        # Appended, not prepended: under `python3 -I` the standard library keeps priority
+        # over anything else in tools/.
+        sys.path.append(str(pathlib.Path(__file__).resolve().parent))
+        import dispatch_ledger
+        _recorder = dispatch_ledger.Recorder.from_env()
+    except Exception as e:
+        print(f"[dispatch-ledger] recorder did not start, this run will have no seal: {e}", flush=True)
+        _recorder = None
 
 # Rate limit tracking — writes resetsAt (Unix timestamp) to disk for the runner
 RATE_LIMIT_RESETS_FILE = "data/infra/rate_limit_resets_at"
@@ -66,6 +84,17 @@ for line in sys.stdin:
         # Not JSON — pass through raw
         print(line, flush=True)
         continue
+
+    if not isinstance(msg, dict):
+        print(line, flush=True)
+        continue
+
+    if _recorder is not None:
+        try:
+            _recorder.observe(msg)
+        except Exception as e:
+            print(f"[dispatch-ledger] recorder stopped, this run will have no seal: {e}", flush=True)
+            _recorder = None
 
     msg_type = msg.get("type", "")
 
@@ -170,3 +199,9 @@ for line in sys.stdin:
                 pass
             print(c("red", f"[RATE LIMIT] rejected; resets at {when} (Unix: {resets_at})"))
         _last_rate_limit_status = status
+
+if _recorder is not None:
+    try:
+        _recorder.seal()
+    except Exception as e:
+        print(f"[dispatch-ledger] could not seal this run: {e}", flush=True)

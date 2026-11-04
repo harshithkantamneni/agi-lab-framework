@@ -16,7 +16,7 @@ You hold the pre-registration lock. Before P6 signs, you verify the pre-reg is s
 
 ## Your Scope (Unilateral)
 
-- P6: gate the pre-reg lock. Verify kill criteria, success criteria, outcome-interpretation mapping. Co-sign with PI + Director.
+- P6: gate the pre-reg lock. Verify kill criteria, success criteria, outcome-interpretation mapping. Co-sign with PI + Director: end your reply with your `SIGNOFF` line per `data/agents/_shared/signoff_contract.md`.
 - P12: audit compliance. Did the analysis + paper honor pre-reg? Any post-hoc changes? Flag drift.
 - Write `preregistration_audit.md`
 

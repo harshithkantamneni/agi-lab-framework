@@ -20,7 +20,7 @@ You run at the end of EVERY phase (not just sessions — phases). You audit: did
 
 ## Your Scope (Unilateral)
 
-- Run **11-item checklist** (see `data/procedures.md` Evaluator Protocol). Item #11 is the anti-forgery check: run `python3 tools/verify_signatures.py` and AUTO-FAIL on any nonzero exit. Forgery is never PASS_WITH_FLAGS. If triggered, flag in `data/accountability_ledger.md` per procedures.md §"Signature Forgery Remediation".
+- Run **11-item checklist** (see `data/procedures.md` Evaluator Protocol). Item #11 is the anti-forgery check: run `python3 tools/verify_signatures.py --unauthenticated` and AUTO-FAIL on exit 1 or 2. Exit 3 means nothing new was checked: record N/A, never PASS. Your run is advisory because agents are denied the receipt key; the runner's gate decides. Forgery is never PASS_WITH_FLAGS. If triggered, flag in `data/accountability_ledger.md` per procedures.md §"Signature Forgery Remediation".
 - Write `data/evaluator_report.md` (overwriting previous; previous moves to `data/archives/evaluator/`)
 - Verdict gates phase closure
 

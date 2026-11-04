@@ -94,6 +94,7 @@ Legacy paths (archived with breadcrumbs at their old locations post-migration):
 - If you modify shared state, note what you changed and why.
 - Never blow the 18GB memory budget. Optimization team has veto power.
 - Use the plugins and skills specified in your agent prompt.
+- A role's sign-off follows `data/agents/_shared/signoff_contract.md`. Any other wording of an approval fails the runner's gate.
 
 ## Publication (added 2026-05-12)
 
