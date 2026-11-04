@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
 """tools/verify_signatures.py — anti-forgery detector for AGI lab governance.
 
-For every `<role> ✓` / "approved by <role>" / "signed <role>" attestation found
-in program deliverables and lock documents, verify a corresponding entry exists
-in `data/agents/<role>/episodic/` dated within the relevant window.
+A sign-off counts only if it is a structured token bound to a receipt that the runner
+recorded from a real dispatch (tools/dispatch_ledger.py). The token format and the rule for
+roles are in data/agents/_shared/signoff_contract.md. What this does and does not close is
+in audits/README.md under "Threat model".
 
 Exit codes:
-  0  all signatures verified (no forgery)
-  1  forgery detected (role signed without dispatch record)
-  2  script error / bad input
+  0  at least one sign-off or episodic record was checked, and all of them hold
+  1  forgery detected: a sign-off with no matching receipt, an unrecognized sign-off shape,
+     a role-filed record with no dispatch of that role, or a required sign-off missing
+  2  cannot judge: evidence missing, unauthenticated or tampered, or a script error
+  3  nothing to verify: the scan ran and found nothing new. Never reported as OK.
 
 Usage:
-  python3 tools/verify_signatures.py [--phase <name>] [--program <name>] [--window-hours N]
-  python3 tools/verify_signatures.py --full  # scans all programs
+  python3 tools/verify_signatures.py [--program <name>] [--window-hours N] [--unauthenticated]
+  python3 tools/verify_signatures.py --check-identity
+  python3 tools/verify_signatures.py --gate --check-identity --run-id R --nonce N   # runner only
+  python3 tools/verify_signatures.py --emit-signoff --role pi --target programs/x/lock.md
+  python3 tools/verify_signatures.py --init-evidence | --preflight | --rebaseline   # operator
+  python3 tools/verify_signatures.py --legacy-episodic --full --as-of signature     # archive
+  python3 tools/verify_signatures.py --check-identity --legacy-logs                 # archive
 
 Added 2026-04-17 (D-110) after D-109 audit revealed 5 forged PI signatures.
 See data/procedures.md §"Signature Forgery Remediation".
@@ -21,14 +29,26 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import fnmatch
 import json
 import os
 import re
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Iterable
+
+# The runner starts this file with `python3 -I`, so a module an agent plants next to it
+# cannot shadow the standard library. Appending here keeps that order for the one sibling
+# this file needs, and tools/dispatch_ledger.py is frozen for agents by the shipped settings.
+if __package__ in (None, ""):
+    _TOOLS = str(Path(__file__).resolve().parent)
+    if _TOOLS not in sys.path:
+        sys.path.append(_TOOLS)
+    import dispatch_ledger as dl
+else:
+    from tools import dispatch_ledger as dl
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 AGENTS_DIR = REPO_ROOT / "data" / "agents"
@@ -508,49 +528,552 @@ def run_identity_audit(verbose: bool = False) -> int:
           "generic-agent work.", file=sys.stderr)
     return 1
 
-def main():
-    parser = argparse.ArgumentParser(
-        description="Anti-forgery detector for lab governance signatures."
-    )
-    parser.add_argument(
-        "--program", default=None,
-        help="Scope scan to a single program (e.g., program_1_example). Default: current program per state.md.",
-    )
-    parser.add_argument(
-        "--full", action="store_true",
-        help="Scan all programs in programs/ (not just current).",
-    )
-    parser.add_argument(
-        "--window-hours", type=int, default=48,
-        help="How recent must the episodic record be (hours). Default: 48.",
-    )
-    parser.add_argument(
-        "--as-of", default=None, metavar="DATE|signature",
-        help=("Audit retrospectively: match episodic records against this reference date, or "
-              "against the date each signature carries (--as-of signature), instead of against "
-              "now. Required for any audit of past work; without it every signature older than "
-              "--window-hours is reported as forged."),
-    )
-    parser.add_argument(
-        "--check-identity", action="store_true",
-        help=("Audit dispatch IDENTITY rather than signature existence: check every "
-              "episodic receipt against the runner's session logs, which record the actual "
-              "subagent_type of each dispatch. Catches role-labelled records produced by a "
-              "generic agent - the failure mode the D-109 remediation itself exhibited."),
-    )
-    parser.add_argument(
-        "--verbose", action="store_true",
-        help="Print every signature found (not just forgeries).",
-    )
-    args = parser.parse_args()
+# ---------------------------------------------------------------------------
+# Receipt-bound sign-offs (November 2026).
+#
+# Everything above reads evidence an agent can write: a role's episodic folder, or a log
+# that assistant text is printed into. It stays for auditing the archive, behind explicit
+# flags. The default check below reads only the runner's ledger.
+# ---------------------------------------------------------------------------
 
-    _load_known_roles()
+EXIT_VERIFIED = 0
+EXIT_FORGERY = 1
+EXIT_CANNOT_JUDGE = 2
+EXIT_EMPTY = 3
 
-    if args.check_identity:
-        sys.exit(run_identity_audit(verbose=args.verbose))
+# The one recognized sign-off shape. The target is explicit so a line in a decision log can
+# cite the lock it refers to, and so a required sign-off can demand target == the document.
+_TOKEN_LOOSE = re.compile(r"\[\s*sign[- ]?off\b[^\]\n]*\]", re.IGNORECASE)
+_TOKEN_STRICT = re.compile(
+    r"\[signoff role=([A-Za-z0-9_\-]+) target=([^\s\]]+) verdict=(APPROVE|MODIFY|REJECT)"
+    r" run=([A-Za-z0-9_.\-]+) receipt=([^\s\]]+)\]"
+)
+SELF_RECEIPT = "self"
 
-    # Determine which paths to scan.
-    paths_to_scan: list[Path] = []
+# Where sign-offs live. `programs/` must exist: a lab with no programs directory is
+# misconfigured, not clean. The two generated briefs quote other files, so they are skipped
+# by not being listed; the consolidator moves log entries out to data/archives/, which is
+# also outside this list.
+REQUIRED_ROOTS = ("programs",)
+CORPUS_FILES = ("data/state.md", "data/memories/log.md", "data/memories/current.md")
+CORPUS_GLOBS = ("data/decisions*.md",)
+REQUIREMENTS_FILE = "data/agents/_shared/signoff_requirements.json"
+DRAFT_SCAN_LINES = 30
+
+# The net for gap 4: lines that claim a role's approval without the token. It is deliberately
+# wide, and it cannot be complete, because prose is an open set. The hard guarantee is the
+# allow-list in REQUIREMENTS_FILE: a document that needs a sign-off is unsigned without a
+# verified token, however its text is phrased.
+_ATTEST_WORDS = (
+    r"approv(?:e|es|ed|al)|sign(?:s|ed)?[ -]?off|signed|signs|co-?sign(?:s|ed)?"
+    r"|ratif(?:y|ies|ied)|attest(?:s|ed)?|certif(?:y|ies|ied)|endors(?:e|es|ed)"
+    r"|concur(?:s|red)?|agree(?:s|d)?|accept(?:s|ed)|lgtm"
+)
+_ATTEST = rf"(?:\b(?:{_ATTEST_WORDS})\b|signature\s*[:(\-–—]|[✓✔✅☑])"
+_NEG_BEFORE = re.compile(
+    r"\b(?:pending|await(?:ing|s)?|requires?|required|needs?|needed|request(?:s|ed|ing)?"
+    r"|before|until|unless|if|once|when|without|no|not|missing|lack(?:s|ing)?|for|seek(?:s|ing)?"
+    r"|ask(?:s|ing)?|get(?:s|ting)?|obtain(?:s|ing)?|dispatch(?:es|ing)?|whether|must|should"
+    r"|shall|will|to)\s+(?:(?:the|a|an)\s+)?$",
+    re.IGNORECASE,
+)
+_NEG_GAP = re.compile(
+    r"\b(?:not|never|no|won't|cannot|can't|didn't|doesn't|hasn't|must|should|shall|will|would"
+    r"|may|might|to|for|needs?|requires?|refus\w+|declin\w+|reject\w+)\b",
+    re.IGNORECASE,
+)
+_NEG_AFTER = re.compile(
+    r"\s*(?:is\s+|was\s+|are\s+)?(?:pending|required?|requires|needed|outstanding|missing|requested"
+    r"|blocked|awaited|gate|rule|format|convention|block|requirement|process|flow|step|contract)\b",
+    re.IGNORECASE,
+)
+
+
+def _strip_code_spans(line: str) -> str:
+    return re.sub(r"`[^`]*`", " ", line)
+
+
+def _claim_patterns() -> tuple:
+    roles = sorted((r.lower() for r in KNOWN_ROLES if r.lower() != "director"), key=len, reverse=True)
+    alts = "|".join(re.escape(r).replace("_", "[_ ]") for r in roles) or "pi"
+    role_first = re.compile(rf"\b(?P<role>{alts})\b(?P<gap>[^.;!?\n]{{0,30}}?)(?P<attest>{_ATTEST})",
+                            re.IGNORECASE)
+    word_first = re.compile(
+        rf"\b(?:{_ATTEST_WORDS})\b\s*(?:(?:by|from|of)\s+(?:the\s+)?|[:\-–—]\s*(?:the\s+)?)"
+        rf"(?P<role>{alts})\b", re.IGNORECASE)
+    symbol_first = re.compile(rf"(?:[✓✔✅☑]|/s/)\s*(?:the\s+)?(?P<role>{alts})\b", re.IGNORECASE)
+    return role_first, word_first, symbol_first
+
+
+def _canonical_role(text: str) -> str:
+    return text.lower().replace(" ", "_")
+
+
+def find_claims(visible: str, patterns: tuple) -> set:
+    """Roles this line claims approved, outside any token. `visible` has code spans and tokens removed."""
+    claims: set = set()
+    known = {r.lower() for r in KNOWN_ROLES}
+    for pat in SIG_PATTERNS:
+        for m in pat.finditer(visible):
+            role = m.group(1).lower()
+            if role in known and role != "director":
+                claims.add(role)
+    role_first, word_first, symbol_first = patterns
+    for m in role_first.finditer(visible):
+        if _NEG_BEFORE.search(visible[: m.start()]) or _NEG_GAP.search(m.group("gap")):
+            continue
+        if _NEG_AFTER.match(visible[m.end():]):
+            continue
+        claims.add(_canonical_role(m.group("role")))
+    for pat in (word_first, symbol_first):
+        for m in pat.finditer(visible):
+            if not _NEG_BEFORE.search(visible[: m.start()]):
+                claims.add(_canonical_role(m.group("role")))
+    return claims
+
+
+@dataclass
+class SignOff:
+    role: str
+    target: str
+    verdict: str
+    run: str
+    receipt: str
+
+
+@dataclass
+class Hit:
+    rel: str
+    lineno: int
+    line: str
+    tokens: list = field(default_factory=list)
+    malformed: list = field(default_factory=list)
+    claims: set = field(default_factory=set)
+
+
+def corpus_paths(program: str | None = None) -> list:
+    """Files in scope. Raises EvidenceError when the scan could not cover what it must."""
+    if program is not None:
+        target = REPO_ROOT / "programs" / program
+        if not target.is_dir():
+            raise dl.EvidenceError(f"program {program!r} not found under programs/")
+        roots = [target]
+    else:
+        missing = [r for r in REQUIRED_ROOTS if not (REPO_ROOT / r).is_dir()]
+        if missing:
+            raise dl.EvidenceError(f"no paths to scan: {', '.join(missing)} is missing")
+        roots = [REPO_ROOT / r for r in REQUIRED_ROOTS]
+    paths: list = []
+    for root in roots:
+        paths.extend(p for p in root.rglob("*") if p.is_file() and p.suffix in (".md", ".txt"))
+    if program is None:
+        paths.extend(REPO_ROOT / rel for rel in CORPUS_FILES if (REPO_ROOT / rel).is_file())
+        for pattern in CORPUS_GLOBS:
+            paths.extend(p for p in REPO_ROOT.glob(pattern) if p.is_file())
+    return sorted(set(paths))
+
+
+def scan_for_signoffs(paths: Iterable[Path]) -> list:
+    """Every line carrying a token, a malformed token, or a claim of a role's approval."""
+    patterns = _claim_patterns()
+    hits: list = []
+    for path in paths:
+        try:
+            text = path.read_text(encoding="utf-8", errors="replace")
+        except OSError as e:
+            raise dl.EvidenceError(f"cannot read {path}: {e}") from e
+        rel = path.relative_to(REPO_ROOT).as_posix()
+        fenced = False
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            if line.lstrip().startswith(("```", "~~~")):
+                fenced = not fenced
+                continue
+            if fenced:
+                continue
+            visible = _strip_code_spans(line)
+            tokens, malformed = [], []
+            for m in _TOKEN_LOOSE.finditer(visible):
+                strict = _TOKEN_STRICT.fullmatch(m.group(0))
+                if strict is None:
+                    malformed.append(m.group(0))
+                else:
+                    tokens.append(SignOff(strict.group(1).lower(), strict.group(2), strict.group(3),
+                                          strict.group(4), strict.group(5)))
+            claims = find_claims(_TOKEN_LOOSE.sub(" ", visible), patterns)
+            if tokens or malformed or claims:
+                hits.append(Hit(rel, lineno, line.strip(), tokens, malformed, claims))
+    return hits
+
+
+def check_signoff(token: SignOff, ledger: dl.Ledger, now: float, window_seconds: int) -> str | None:
+    """None if the token is backed by a matching receipt, else why not."""
+    if token.role not in {r.lower() for r in KNOWN_ROLES}:
+        return f"role {token.role!r} is not registered"
+    target = dl.normalize_target(token.target)
+    if target is None or not (REPO_ROOT / target).is_file():
+        return f"target {token.target!r} is not a file in this tree"
+    if token.role == "director":
+        # The Director is the session itself: its own sign-off is self-attestation, and the
+        # attack this check exists for is the Director signing for someone else.
+        if token.run not in ledger.runs:
+            return f"director sign-off names run {token.run!r}, which has no ledger"
+        if token.receipt != SELF_RECEIPT:
+            return f"director sign-off must use receipt={SELF_RECEIPT}"
+        return None
+    r = ledger.receipts.get(token.receipt)
+    if r is None:
+        return f"no receipt {token.receipt!r}: no recorded dispatch produced this sign-off"
+    if r.role != token.role:
+        return f"receipt {token.receipt} is a dispatch of {r.role!r}, not {token.role!r}"
+    if r.run != token.run:
+        return f"receipt {token.receipt} belongs to run {r.run!r}, not {token.run!r}"
+    if r.parent is not None:
+        return f"receipt {token.receipt} is a nested dispatch; only the Director's dispatches count"
+    if r.completed_at is None:
+        return f"receipt {token.receipt} never completed"
+    if r.is_error:
+        return f"receipt {token.receipt} ended in an error"
+    if [target, token.verdict] not in r.attests:
+        return (f"the reply to receipt {token.receipt} does not contain "
+                f"'SIGNOFF target={target} verdict={token.verdict}'")
+    if [target, token.verdict] in r.dictated:
+        return f"the dispatch prompt for receipt {token.receipt} dictated this exact verdict"
+    age = now - r.completed_at
+    if age > window_seconds:
+        return (f"receipt {token.receipt} completed {age / 3600:.1f}h ago, "
+                f"outside the {window_seconds // 3600}h window")
+    return None
+
+
+def _load_requirements() -> dict:
+    path = REPO_ROOT / REQUIREMENTS_FILE
+    if not path.is_file():
+        return {"rules": [], "draft_marker": "status: draft"}
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        raise dl.EvidenceError(f"cannot read {REQUIREMENTS_FILE}: {e}") from e
+
+
+def _is_draft(path: Path, marker: str) -> bool:
+    try:
+        head = path.read_text(encoding="utf-8", errors="replace").splitlines()[:DRAFT_SCAN_LINES]
+    except OSError:
+        return False
+    return any(line.strip() == marker for line in head)
+
+
+@dataclass
+class Outcome:
+    files: int = 0
+    verified: int = 0
+    prior: int = 0
+    identity_checked: int = 0
+    forgeries: list = field(default_factory=list)
+    identity: list = field(default_factory=list)
+    generic_naming_role: list = field(default_factory=list)
+    new_lines: set = field(default_factory=set)
+    new_files: set = field(default_factory=set)
+
+    @property
+    def violated(self) -> bool:
+        return bool(self.forgeries or self.identity)
+
+
+def check_tree(ledger: dl.Ledger, accepted: dict, window_seconds: int, program: str | None = None,
+               scan_signoffs: bool = True, check_identity: bool = False, now: float | None = None) -> Outcome:
+    now = time.time() if now is None else now
+    out = Outcome()
+    if scan_signoffs:
+        paths = corpus_paths(program)
+        out.files = len(paths)
+        hits = scan_for_signoffs(paths)
+        good: dict = {}
+        for hit in hits:
+            key = dl.line_key(hit.rel, hit.line)
+            if key in accepted["lines"]:
+                out.prior += 1
+                # Verified by an earlier gate. It still counts toward a required document
+                # that is being signed across sessions.
+                for token in hit.tokens:
+                    good.setdefault(hit.rel, set()).add((token.role, dl.normalize_target(token.target),
+                                                         token.verdict))
+                continue
+            problems = [f"unrecognized sign-off shape: {m}" for m in hit.malformed]
+            backed: set = set()
+            for token in hit.tokens:
+                reason = check_signoff(token, ledger, now, window_seconds)
+                if reason is None:
+                    out.verified += 1
+                    backed.add(token.role)
+                    good.setdefault(hit.rel, set()).add((token.role, dl.normalize_target(token.target),
+                                                         token.verdict))
+                else:
+                    problems.append(reason)
+            for role in sorted(hit.claims - backed):
+                problems.append(f"claims approval by {role} without a verified [signoff ...] token "
+                                f"(unrecognized sign-off shape)")
+            if problems:
+                roles = sorted({t.role for t in hit.tokens} | hit.claims) or ["?"]
+                out.forgeries.append(Forgery(",".join(roles), hit.rel, hit.lineno, "; ".join(problems), hit.line))
+            else:
+                out.new_lines.add(key)
+        requirements = _load_requirements()
+        marker = requirements.get("draft_marker", "status: draft")
+        for path in paths:
+            rel = path.relative_to(REPO_ROOT).as_posix()
+            if rel in accepted["files"]:
+                continue
+            for rule in requirements.get("rules", []):
+                if not fnmatch.fnmatchcase(rel, rule.get("glob", "")) or _is_draft(path, marker):
+                    continue
+                missing = [r for r in rule.get("roles", []) if (r, rel, "APPROVE") not in good.get(rel, set())]
+                if missing:
+                    out.forgeries.append(Forgery(
+                        ",".join(missing), rel, 0,
+                        f"this document needs a verified APPROVE sign-off from {', '.join(missing)} "
+                        f"(rule {rule.get('glob')}), or the line '{marker}' in its first "
+                        f"{DRAFT_SCAN_LINES} lines", "(required sign-off)"))
+                else:
+                    out.new_files.add(rel)
+    if check_identity:
+        known = {r.lower() for r in KNOWN_ROLES if r.lower() != "director"}
+        for receipt in ledger.receipts.values():
+            if receipt.role in GENERIC_TYPES and receipt.parent is None:
+                named = sorted(r for r in known if re.search(
+                    r"\b" + re.escape(r).replace("_", "[_ ]") + r"\b", receipt.description, re.IGNORECASE))
+                if named:
+                    out.generic_naming_role.append((receipt.receipt, named, receipt.description))
+        for ep_dir in sorted(AGENTS_DIR.glob("*/episodic")):
+            role = ep_dir.parent.name
+            if role.lower() == "director":
+                continue
+            for f in sorted(ep_dir.glob("*.md")):
+                rel = f.relative_to(REPO_ROOT).as_posix()
+                if rel in accepted["files"]:
+                    continue
+                out.identity_checked += 1
+                backed = any(
+                    r.role == role and r.parent is None and r.completed_at is not None
+                    and not r.is_error and now - r.completed_at <= window_seconds
+                    for r in ledger.receipts.values())
+                if backed:
+                    out.new_files.add(rel)
+                else:
+                    out.identity.append(IdentityViolation(
+                        role=role, receipt=rel, receipt_date="(new since last accepted gate)",
+                        reason=(f"the ledger holds no completed dispatch with subagent_type={role} "
+                                f"inside the {window_seconds // 3600}h window")))
+    return out
+
+
+def report(out: Outcome, label_ok: bool = True) -> int:
+    for receipt, named, desc in out.generic_naming_role:
+        print(f"[verify_signatures] NOTICE: generic dispatch {receipt} names {','.join(named)} in "
+              f"its description ({desc[:80]}); it counts as no role's dispatch")
+    if out.forgeries:
+        print(f"[verify_signatures] FORGERY DETECTED: {len(out.forgeries)} unverified signature(s)", file=sys.stderr)
+        for f in out.forgeries:
+            print(f"  {f.source_file}:{f.line_number} — {f.role}", file=sys.stderr)
+            print(f"    reason: {f.reason}", file=sys.stderr)
+            print(f"    line:   {f.line_text}", file=sys.stderr)
+    if out.identity:
+        print(f"[verify_signatures] IDENTITY VIOLATION: {len(out.identity)} receipt(s) filed under "
+              "a role that did not run them", file=sys.stderr)
+        for v in out.identity:
+            print(f"  {v.receipt} - {v.role}", file=sys.stderr)
+            print(f"    reason: {v.reason}", file=sys.stderr)
+    if out.violated:
+        print("", file=sys.stderr)
+        print("Remediation: dispatch the real role, have it return its SIGNOFF line, and cite "
+              "the receipt. See data/agents/_shared/signoff_contract.md and "
+              "data/procedures.md §'Signature Forgery Remediation'.", file=sys.stderr)
+        return EXIT_FORGERY
+    if out.verified:
+        print(f"[verify_signatures] OK: {out.verified} signatures verified, 0 forgeries detected "
+              f"({out.identity_checked} new episodic record(s) backed by a dispatch, "
+              f"{out.prior} line(s) accepted earlier, {out.files} file(s) scanned)")
+        return EXIT_VERIFIED
+    if out.identity_checked:
+        # Printing "OK: 0 signatures verified" here would repeat what the audit found in the
+        # evaluator reports: a pass that does not say how little it checked.
+        print(f"[verify_signatures] OK: {out.identity_checked} new episodic record(s) backed by a "
+              f"dispatch. No new sign-offs ({out.prior} line(s) accepted earlier, "
+              f"{out.files} file(s) scanned).")
+        return EXIT_VERIFIED
+    print(f"[verify_signatures] EMPTY: scanned {out.files} file(s), found nothing new to verify "
+          f"({out.prior} line(s) accepted earlier). This is not a pass over checked attestations.")
+    return EXIT_EMPTY
+
+
+def _open_evidence(unauthenticated: bool) -> tuple:
+    """(directory, key, ledger, accepted). Raises EvidenceError if any of it cannot be trusted."""
+    directory = dl.evidence_dir(REPO_ROOT)
+    key = None
+    if unauthenticated:
+        print("[verify_signatures] UNAUTHENTICATED: receipt HMACs not checked. This result is "
+              "advisory; only the runner's gate holds the key.", file=sys.stderr)
+    else:
+        key = dl.load_key(directory)
+    return directory, key, dl.read_ledger(directory, key), dl.load_accepted(directory, key)
+
+
+def run_receipt_check(args) -> int:
+    try:
+        _d, _k, ledger, accepted = _open_evidence(args.unauthenticated)
+        identity_only = args.check_identity and not args.full and not args.program
+        if identity_only and not ledger.runs:
+            raise dl.EvidenceError("the ledger holds no runs, so dispatch identity cannot be judged")
+        out = check_tree(ledger, accepted, args.window_hours * 3600, program=args.program,
+                         scan_signoffs=not identity_only, check_identity=args.check_identity)
+    except dl.EvidenceError as e:
+        print(f"[verify_signatures] CANNOT JUDGE: {e}", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+    return report(out)
+
+
+def run_gate(args) -> int:
+    """The runner's clean-exit check. Prints a nonce-bound verdict only if it got that far."""
+    if not args.run_id or not args.nonce:
+        print("[verify_signatures] CANNOT JUDGE: --gate needs --run-id and --nonce", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+    try:
+        directory, key, ledger, accepted = _open_evidence(False)
+        info = ledger.runs.get(args.run_id)
+        if info is None:
+            raise dl.EvidenceError(f"no ledger for run {args.run_id}: the dispatch recorder did not start")
+        if not info.sealed:
+            raise dl.EvidenceError(f"ledger for run {args.run_id} has no seal: the dispatch recorder "
+                                   "did not reach the end of the stream")
+        out = check_tree(ledger, accepted, args.window_hours * 3600, check_identity=args.check_identity)
+        rc = report(out)
+        status = {EXIT_VERIFIED: "VERIFIED", EXIT_FORGERY: "FORGERY", EXIT_EMPTY: "EMPTY"}[rc]
+        missed = [r for r in ledger.runs if r != args.run_id and not dl.verdict_exists(directory, r)]
+        for r in missed:
+            dl.write_verdict(directory, key, r, status="NEVER_GATED", noticed_by=args.run_id)
+        if missed:
+            print(f"[verify_signatures] NOTICE: the gate never reached a verdict for {len(missed)} "
+                  f"earlier run(s): {', '.join(sorted(missed))}. Their new lines are checked now.")
+        # Lines and records that verified stay verified even when another line in the tree
+        # failed. Anything that failed is not added, so it keeps blocking until it is fixed.
+        dl.save_accepted(directory, key, accepted["lines"] | out.new_lines,
+                         accepted["files"] | out.new_files)
+        dl.write_verdict(directory, key, args.run_id, status=status, signoffs=out.verified,
+                         episodic=out.identity_checked, files=out.files,
+                         violations=len(out.forgeries) + len(out.identity), sandbox=info.sandbox)
+    except (dl.EvidenceError, OSError) as e:
+        print(f"[verify_signatures] CANNOT JUDGE: {e}", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+    if info.sandbox != "on":
+        print(f"[verify_signatures] NOTICE: this run recorded sandbox={info.sandbox}, so the key "
+              "and ledger were not protected from the agents' shell commands.")
+    print(f"[verify_signatures] GATE-VERDICT nonce={args.nonce} status={status} run={args.run_id} "
+          f"signoffs={out.verified} episodic={out.identity_checked} files={out.files} sandbox={info.sandbox}")
+    return rc
+
+
+def _all_current_lines() -> tuple:
+    """Everything sign-off-shaped now in the tree, for an operator baseline."""
+    paths = corpus_paths() if all((REPO_ROOT / r).is_dir() for r in REQUIRED_ROOTS) else []
+    hits = scan_for_signoffs(paths)
+    lines = {dl.line_key(h.rel, h.line) for h in hits}
+    files = {p.relative_to(REPO_ROOT).as_posix() for p in paths}
+    files |= {f.relative_to(REPO_ROOT).as_posix() for f in AGENTS_DIR.glob("*/episodic/*.md")}
+    return lines, files
+
+
+def run_init_evidence() -> int:
+    directory = dl.evidence_dir(REPO_ROOT)
+    if dl.key_path(directory).exists() or (directory / dl.ACCEPTED_NAME).exists():
+        print(f"[verify_signatures] CANNOT JUDGE: evidence already exists at {directory}. "
+              "--init-evidence never overwrites it.", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+    dl.init_key(directory)
+    lines, files = _all_current_lines()
+    dl.save_accepted(directory, dl.load_key(directory), lines, files)
+    print(f"[verify_signatures] evidence created at {directory}: {len(lines)} existing sign-off "
+          f"line(s) and {len(files)} file(s) accepted as a legacy baseline, not verified.")
+    return EXIT_VERIFIED
+
+
+def run_rebaseline() -> int:
+    directory = dl.evidence_dir(REPO_ROOT)
+    try:
+        key = dl.load_key(directory)
+    except dl.EvidenceError as e:
+        print(f"[verify_signatures] CANNOT JUDGE: {e}", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+    lines, files = _all_current_lines()
+    dl.save_accepted(directory, key, lines, files)
+    print(f"[verify_signatures] operator baseline: {len(lines)} line(s) and {len(files)} file(s) "
+          "accepted without verification.")
+    return EXIT_VERIFIED
+
+
+def run_preflight() -> int:
+    """Runner startup. Creates evidence only on a tree with nothing to launder."""
+    directory = dl.evidence_dir(REPO_ROOT)
+    has_key = dl.key_path(directory).exists()
+    has_accepted = (directory / dl.ACCEPTED_NAME).exists()
+    try:
+        if has_key and has_accepted:
+            key = dl.load_key(directory)
+            dl.read_ledger(directory, key)
+            dl.load_accepted(directory, key)
+            print(f"[verify_signatures] preflight OK: evidence at {directory}")
+            return EXIT_VERIFIED
+        if has_key or has_accepted:
+            raise dl.EvidenceError(f"evidence at {directory} is incomplete; an operator must look at it")
+        lines, _files = _all_current_lines()
+        episodic = [f for f in AGENTS_DIR.glob("*/episodic/*.md")]
+        if lines or episodic:
+            raise dl.EvidenceError(
+                f"this tree holds {len(lines)} sign-off line(s) and {len(episodic)} episodic record(s) "
+                f"but no evidence directory. Run once as the operator: "
+                f"python3 tools/verify_signatures.py --init-evidence")
+        return run_init_evidence()
+    except (dl.EvidenceError, OSError) as e:
+        print(f"[verify_signatures] CANNOT JUDGE: {e}", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+
+
+def run_emit_signoff(args) -> int:
+    """Print the exact line to paste. A convenience; the gate does not trust this output."""
+    target = dl.normalize_target(args.target or "")
+    if not args.role or target is None:
+        print("--emit-signoff needs --role and a repo-relative --target", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+    role = args.role.lower()
+    try:
+        ledger = dl.read_ledger(dl.evidence_dir(REPO_ROOT), None)
+    except dl.EvidenceError as e:
+        print(f"[verify_signatures] CANNOT JUDGE: {e}", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
+    if role == "director":
+        run = ledger.latest_run()
+        if run is None or args.verdict is None:
+            print("--emit-signoff --role director needs --verdict and a ledger run", file=sys.stderr)
+            return EXIT_FORGERY
+        print(f"[signoff role=director target={target} verdict={args.verdict} run={run} receipt={SELF_RECEIPT}]")
+        return EXIT_VERIFIED
+    matches = [r for r in ledger.receipts.values()
+               if r.role == role and r.parent is None and r.completed_at is not None and not r.is_error
+               and any(a[0] == target for a in r.attests)]
+    if not matches:
+        print(f"no completed dispatch of {role} returned a SIGNOFF line for {target}. Dispatch the "
+              "role in the foreground and have it end its reply with that line.", file=sys.stderr)
+        return EXIT_FORGERY
+    latest = max(matches, key=lambda r: r.completed_at)
+    verdict = next(a[1] for a in reversed(latest.attests) if a[0] == target)
+    print(f"[signoff role={role} target={target} verdict={verdict} run={latest.run} receipt={latest.receipt}]")
+    return EXIT_VERIFIED
+
+
+def run_legacy_episodic(args, parser) -> int:
+    """Audit old free-text signatures against episodic files. Archive use only."""
+    print("[verify_signatures] LEGACY MODE: episodic files are written by agents, so this cannot "
+          "show a dispatch happened. The gate never uses this mode.", file=sys.stderr)
+    paths_to_scan: list = []
     if args.full:
         paths_to_scan.extend(PROGRAMS_DIR.rglob("*.md"))
     elif args.program:
@@ -558,7 +1081,6 @@ def main():
         if target.exists():
             paths_to_scan.extend(target.rglob("*.md"))
     else:
-        # Default: scan the current program (inferred from state.md) + the lock/state files.
         state_file = REPO_ROOT / "data" / "state.md"
         if state_file.exists():
             state_text = state_file.read_text(encoding="utf-8", errors="replace")
@@ -567,23 +1089,16 @@ def main():
                 target = PROGRAMS_DIR / m.group(1)
                 if target.exists():
                     paths_to_scan.extend(target.rglob("*.md"))
-        # Also include state.md itself and the decisions files.
-        paths_to_scan.extend([
-            REPO_ROOT / "data" / "state.md",
-            REPO_ROOT / "data" / "decisions_recent.md",
-        ])
-
+        paths_to_scan.extend([REPO_ROOT / "data" / "state.md", REPO_ROOT / "data" / "decisions_recent.md"])
     if not paths_to_scan:
-        print("[verify_signatures] no paths to scan; nothing to verify")
-        sys.exit(0)
-
+        print("[verify_signatures] no paths to scan; nothing to verify", file=sys.stderr)
+        return EXIT_CANNOT_JUDGE
     sigs = find_signatures(paths_to_scan)
     if args.verbose:
         print(f"[verify_signatures] scanned {len(paths_to_scan)} files, found {len(sigs)} signatures")
         for s in sigs:
             print(f"  {s.source_file}:{s.line_number} → {s.role}"
                   f"{' [episodic ref]' if s.has_episodic_ref else ''}")
-
     window = args.window_hours * 3600
     as_of = args.as_of
     if as_of not in (None, "signature"):
@@ -595,25 +1110,90 @@ def main():
         print("NOTE: --full without --as-of runs the LIVE criterion over the whole archive, "
               "so every signature older than --window-hours will be reported. For a "
               "retrospective audit use --as-of signature.", file=sys.stderr)
-    forgeries: list[Forgery] = []
-    for s in sigs:
-        f = verify_signature(s, window, as_of=as_of)
-        if f is not None:
-            forgeries.append(f)
-
+    forgeries = [f for f in (verify_signature(s, window, as_of=as_of) for s in sigs) if f is not None]
+    if not sigs:
+        print(f"[verify_signatures] EMPTY: scanned {len(paths_to_scan)} file(s), 0 signatures found.")
+        return EXIT_EMPTY
     if not forgeries:
         print(f"[verify_signatures] OK: {len(sigs)} signatures verified, 0 forgeries detected")
-        sys.exit(0)
-
+        return EXIT_VERIFIED
     print(f"[verify_signatures] FORGERY DETECTED: {len(forgeries)} unverified signature(s)", file=sys.stderr)
     for f in forgeries:
         print(f"  {f.source_file}:{f.line_number} — {f.role}", file=sys.stderr)
         print(f"    reason: {f.reason}", file=sys.stderr)
         print(f"    line:   {f.line_text}", file=sys.stderr)
-    print("", file=sys.stderr)
-    print("Remediation: see data/procedures.md §'Signature Forgery Remediation'.", file=sys.stderr)
-    print("Append entry to data/accountability_ledger.md, flag offending docs, dispatch real agent.", file=sys.stderr)
-    sys.exit(1)
+    return EXIT_FORGERY
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description="Anti-forgery detector for lab governance signatures."
+    )
+    parser.add_argument(
+        "--program", default=None,
+        help="Scope the scan to one program (e.g., program_1_example). Default: the whole corpus.",
+    )
+    parser.add_argument(
+        "--full", action="store_true",
+        help="Scan the whole corpus. This is already the default; kept for existing callers.",
+    )
+    parser.add_argument(
+        "--window-hours", type=int, default=48,
+        help="How recently a receipt must have completed for a new sign-off to cite it. Default: 48.",
+    )
+    parser.add_argument(
+        "--check-identity", action="store_true",
+        help=("Check each new role-filed episodic record against the ledger's record of who "
+              "actually ran. Alone, runs only this check. With --gate, runs both."),
+    )
+    parser.add_argument("--gate", action="store_true", help="Runner only: clean-exit check with a verdict.")
+    parser.add_argument("--run-id", default=None, help="With --gate: the run being closed.")
+    parser.add_argument("--nonce", default=None, help="With --gate: echoed in the verdict line.")
+    parser.add_argument(
+        "--unauthenticated", action="store_true",
+        help="For agents, who are denied the key: check chains and bindings, not HMACs. Advisory.",
+    )
+    parser.add_argument("--emit-signoff", action="store_true", help="Print the token for a recorded attestation.")
+    parser.add_argument("--role", default=None, help="With --emit-signoff.")
+    parser.add_argument("--target", default=None, help="With --emit-signoff.")
+    parser.add_argument("--verdict", choices=dl.VERDICTS, default=None, help="With --emit-signoff --role director.")
+    parser.add_argument("--preflight", action="store_true", help="Runner startup check.")
+    parser.add_argument("--init-evidence", action="store_true", help="Operator: create the key and baseline once.")
+    parser.add_argument("--rebaseline", action="store_true", help="Operator: accept all current lines unverified.")
+    parser.add_argument(
+        "--legacy-episodic", action="store_true",
+        help="Archive audit: old free-text signatures against episodic files. Cannot prove dispatch.",
+    )
+    parser.add_argument(
+        "--as-of", default=None, metavar="DATE|signature",
+        help=("With --legacy-episodic: match episodic records against this reference date, or the "
+              "date each signature carries (--as-of signature), instead of now."),
+    )
+    parser.add_argument(
+        "--legacy-logs", action="store_true",
+        help=("With --check-identity: read the runner's session logs, as the original audit did. "
+              "Assistant text is printed into those logs, so this can be fooled. Archive use only."),
+    )
+    parser.add_argument("--verbose", action="store_true", help="More detail in archive modes.")
+    args = parser.parse_args()
+
+    _load_known_roles()
+
+    if args.check_identity and args.legacy_logs:
+        sys.exit(run_identity_audit(verbose=args.verbose))
+    if args.preflight:
+        sys.exit(run_preflight())
+    if args.init_evidence:
+        sys.exit(run_init_evidence())
+    if args.rebaseline:
+        sys.exit(run_rebaseline())
+    if args.emit_signoff:
+        sys.exit(run_emit_signoff(args))
+    if args.gate:
+        sys.exit(run_gate(args))
+    if args.legacy_episodic or args.as_of:
+        sys.exit(run_legacy_episodic(args, parser))
+    sys.exit(run_receipt_check(args))
 
 
 if __name__ == "__main__":

@@ -1,0 +1,46 @@
+{
+  "_comment": "Rendered by tools/dispatch_ledger.py render-settings and passed to every agent process with --settings. Deny rules hold under --dangerously-skip-permissions and cover the built-in file tools. The sandbox covers shell commands and their children. Everything the runner executes outside the sandbox is frozen here, because writing to one of those files would be a way out. See audits/README.md, Threat model.",
+  "permissions": {
+    "deny": [
+      "Read(/{{EVIDENCE}}/receipt.key)",
+      "Edit(/{{EVIDENCE}}/**)",
+      "Edit(/{{REPO}}/run_agi_lab.sh)",
+      "Edit(/{{REPO}}/Makefile)",
+      "Edit(/{{REPO}}/config/**)",
+      "Edit(/{{REPO}}/*.py)",
+      "Edit(/{{REPO}}/tools/*.py)",
+      "Edit(/{{REPO}}/tools/*.sh)",
+      "Edit(/{{REPO}}/tools/retrieval/**)",
+      "Edit(/{{REPO}}/tools/__pycache__/**)",
+      "Edit(/{{REPO}}/.venv/**)",
+      "Edit(/{{REPO}}/data/agents/_shared/signoff_requirements.json)"
+    ]
+  },
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "denyRead": [
+        "{{EVIDENCE}}/receipt.key"
+      ],
+      "denyWrite": [
+        "{{EVIDENCE}}",
+        "{{REPO}}/run_agi_lab.sh",
+        "{{REPO}}/Makefile",
+        "{{REPO}}/config",
+        "{{REPO}}/*.py",
+        "{{REPO}}/tools/*.py",
+        "{{REPO}}/tools/*.sh",
+        "{{REPO}}/tools/retrieval",
+        "{{REPO}}/tools/__pycache__",
+        "{{REPO}}/.venv",
+        "{{REPO}}/data/agents/_shared/signoff_requirements.json"
+      ],
+      "allowWrite": [
+        "~/Library/Mobile Documents",
+        "~/.cache"
+      ]
+    }
+  }
+}

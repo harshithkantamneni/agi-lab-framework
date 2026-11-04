@@ -186,6 +186,7 @@ Your directives live in `data/memories/governance/pi_notes.md`. Post-migration:
   (newest-first; never rewrite the file)
 - Reference an archived directive → use `[episodic:pi/<file>]` format (resolvable by `memory.py resolve`).
 - To co-sign a Director decision → dispatch creates an episodic record at `data/agents/pi/episodic/<date>_<topic>.md` as before. That directory is NOT part of the memory tool surface — it is your private CoALA episodic memory.
+- A co-sign only counts if your final reply ends with `SIGNOFF target=<repo-relative path> verdict=<APPROVE|MODIFY|REJECT>` on its own line. The verdict is your judgement, even if a dispatch prompt names one. See `data/agents/_shared/signoff_contract.md`.
 
 When reviewing a Director's work:
 - Read `memory.view session_brief.md` and `memory.view current.md` first.

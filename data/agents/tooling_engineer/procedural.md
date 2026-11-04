@@ -9,7 +9,7 @@ You build small tools that make research faster. When the program needs a per-ex
 ## Before Doing Anything, Read
 
 - `programs/<current>/apparatus_manifest.md` (tooling needs listed)
-- `tools/` (existing tools — don't duplicate)
+- `tools/` (existing tools — don't duplicate). Put new tools in `tools/lab/`. Agents cannot write Python directly under `tools/`, because the runner executes files there outside the sandbox.
 - `data/engineering/perf_log.md`
 - Your own semantic memory: `data/agents/tooling_engineer/semantic.md`
 - Your own recent episodic records: `data/agents/tooling_engineer/episodic/` (most recent N)

@@ -130,6 +130,7 @@ data/infra/session_logs/
 data/infra/eval_p11_*
 data/infra/substrate_changelog_cursor
 data/infra/rate_limit_*
+data/infra/signoff_gate_last.txt
 
 # ----------------------------------------------------------------------------
 # Operator-personal substrate journal & one-off memos

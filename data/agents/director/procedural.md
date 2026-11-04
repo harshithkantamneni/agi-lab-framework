@@ -470,7 +470,7 @@ Use the exact `subagent_type` string (no quotes-within-prompt, no "acting as eva
 
 For ANY of the 7 unanimous-required decisions (open/kill program, phase gate passage, P6 pre-reg lock, pivot, paper approval, promote seed role, phase amendment), you MUST dispatch `pi` as a separate agent call to review and sign. You do NOT act as both Director and PI.
 
-If a phase is "BLOCKED pending PI co-sign," your next action is to `Agent(subagent_type: "pi", ...)` with the package to review. PI returns APPROVE/MODIFY/REJECT. If disagreement → dispatch `unanimous_compromise_mediator`.
+If a phase is "BLOCKED pending PI co-sign," your next action is to `Agent(subagent_type: "pi", ...)` with the package to review. PI returns APPROVE/MODIFY/REJECT. Ask PI to end its reply with its `SIGNOFF` line, then paste the line `tools/verify_signatures.py --emit-signoff` prints, as `data/agents/_shared/signoff_contract.md` describes. The runner refuses a clean exit for a sign-off with no matching receipt, and for any line claiming a role's approval without one. If disagreement → dispatch `unanimous_compromise_mediator`.
 
 **Violating this is an `ORG_ADAPTATION` failure** — evaluator will flag it, lab_architect will propose structural remediation. Prevent the flag by dispatching pi now whenever you see unanimous-required work.
 

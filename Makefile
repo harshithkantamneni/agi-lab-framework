@@ -259,11 +259,16 @@ slack-bot-stop: ## Stop the Slack bot daemon
 slack-bot-log: ## Tail the Slack bot log
 	@tail -f data/infra/slack_bot.log
 
+.PHONY: lab-evidence-init
+lab-evidence-init: ## Create the sign-off key and accept existing sign-offs as an unverified baseline (operator, once)
+	@python3 -I tools/verify_signatures.py --init-evidence
+
 .PHONY: lab-start
 lab-start: ## Start the autonomous AGI lab in tmux (wrapped in caffeinate to survive rate-limit waits)
 	@if tmux has-session -t agi-lab 2>/dev/null; then \
 		echo "AGI lab is already running. Use 'make lab-attach' to view."; \
 	else \
+		python3 -I tools/verify_signatures.py --preflight || exit 1; \
 		tmux new-session -d -s agi-lab 'caffeinate -dis ./run_agi_lab.sh'; \
 		echo "=== AGI Lab started in tmux session 'agi-lab' ==="; \
 		echo "  (wrapped in 'caffeinate -dis' to prevent sleep during long rate-limit waits)"; \
